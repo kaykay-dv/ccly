@@ -9,6 +9,8 @@
 ## Extras
 
 - `ccly create --extras` accepts plugin names. `oauth_client` adds mozilla-django-oidc to the app and writes its settings into `.env` on `ccly init`.
+- `oauth_provider` adds django-oauth-toolkit. The site serves OAuth 2 at `/o/`, and OpenID Connect turns on when `OIDC_RSA_PRIVATE_KEY` is set.
+- The project test site pins `CCLY_LANGUAGE_CODE` to `en-us` so the admin login check does not follow the machine language.
 
 ## App environment
 

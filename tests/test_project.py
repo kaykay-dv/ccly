@@ -61,6 +61,19 @@ def site(tmp_path_factory):
         _install_app(app_parent / APP_NAME, APP_NAME)
         os.chdir(site_dir)
         assert run(["init", APP_NAME]) == 0
+        # The login copy below is the English admin string. Init may have
+        # copied this machine's language, so the site under test stays en-us.
+        env_file = site_dir / ".env"
+        env_file.write_text(
+            re.sub(
+                r"^CCLY_LANGUAGE_CODE=.*$",
+                "CCLY_LANGUAGE_CODE=en-us",
+                env_file.read_text(encoding="utf-8"),
+                count=1,
+                flags=re.M,
+            ),
+            encoding="utf-8",
+        )
         os.environ["DJANGO_SETTINGS_MODULE"] = "ccly.project.settings"
         import django
         from django.contrib.auth import get_user_model

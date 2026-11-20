@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from ccly.extras import env_lines_for_apps
+from ccly.extras import REGISTRY, env_lines_for_apps
 from ccly.scaffold import create_app, validate_app_name
 
 HELP = """\
@@ -65,7 +65,7 @@ def _command_create(argv: list[str]) -> int:
         nargs="+",
         default=[],
         metavar="EXTRA",
-        help="Optional features to include. Known: oauth_client.",
+        help="Optional features to include. Known: " + ", ".join(REGISTRY.known()) + ".",
     )
     parsed = _parse(parser, argv)
     if isinstance(parsed, int):

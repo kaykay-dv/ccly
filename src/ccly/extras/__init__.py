@@ -7,6 +7,7 @@ import importlib.util
 
 from ccly.extras.base import Extra, UnknownExtrasError
 from ccly.extras.oauth_client import OAuthClient
+from ccly.extras.oauth_provider import OAuthProvider
 
 __all__ = [
     "Extra",
@@ -67,6 +68,7 @@ class ExtraRegistry:
 
 REGISTRY = ExtraRegistry()
 REGISTRY.register(OAuthClient())
+REGISTRY.register(OAuthProvider())
 
 
 def resolve_extras(names: list[str]) -> list[Extra]:

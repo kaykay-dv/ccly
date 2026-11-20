@@ -32,13 +32,54 @@ That writes a src-layout package, including `AGENTS.md` and a Sphinx project tha
 
 ### Extras
 
-`--extras` takes one or more optional features. Each feature is a plugin. The only one so far is `oauth_client`, which adds [mozilla-django-oidc](https://github.com/mozilla/mozilla-django-oidc):
+`--extras` takes one or more optional features. Each feature is a plugin.
+
+`oauth_client` adds [mozilla-django-oidc](https://github.com/mozilla/mozilla-django-oidc):
 
 ```bash
 ccly create bulletin --extras oauth_client
 ```
 
 The app's `ccly_settings.py` wires the OpenID Connect client. After the app is installed, `ccly init` writes the provider's client id, secret, and endpoint URLs into `.env`. The callback URL is `http://127.0.0.1:8000/oidc/callback/`.
+
+`oauth_provider` adds [django-oauth-toolkit](https://django-oauth-toolkit.readthedocs.io/en/latest/) so the site can issue tokens:
+
+```bash
+ccly create bulletin --extras oauth_provider
+```
+
+`ccly migrate` creates the provider tables. Register an application in the admin, then use the endpoints under `/o/`: `/o/authorize/`, `/o/token/`, `/o/revoke_token/`, and `/o/introspect/`. A browser that is not signed in is sent to `/m/login/`.
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `OAUTHLIB_INSECURE_TRANSPORT` | Allow HTTP. Any value counts, including `false`; clear it to require HTTPS | `1` |
+| `OAUTH2_ACCESS_TOKEN_EXPIRE_SECONDS` | Access token lifetime | `3600` |
+| `OAUTH2_REFRESH_TOKEN_EXPIRE_SECONDS` | Idle refresh token lifetime. `0` means no expiry | `1209600` (14 days) |
+| `OAUTH2_PKCE_REQUIRED` | Require PKCE on the authorization code grant | `true` |
+| `OAUTH2_ROTATE_REFRESH_TOKEN` | Issue a new refresh token on each refresh | `true` |
+| `OAUTH2_REFRESH_TOKEN_REUSE_PROTECTION` | Revoke the token family when a rotated refresh token is reused | `true` |
+| `OAUTH2_ALLOWED_REDIRECT_URI_SCHEMES` | Comma-separated redirect schemes. Use `https` on a public site | `http,https` |
+| `OAUTH2_SCOPES` | Comma-separated `name:description` scopes | `read:Read scope,write:Write scope` |
+| `OIDC_RSA_PRIVATE_KEY` | PEM private key. Empty keeps OpenID Connect off | Empty |
+
+Before a public deployment, clear `OAUTHLIB_INSECURE_TRANSPORT` and set `OAUTH2_ALLOWED_REDIRECT_URI_SCHEMES=https`. Paste a PEM key into `OIDC_RSA_PRIVATE_KEY` to enable OpenID Connect; `openid` is added to the scopes when that key is set.
+
+To accept a token on one view without replacing the project's API settings:
+
+```python
+from oauth2_provider.contrib.rest_framework import OAuth2Authentication, TokenHasScope
+
+class MyView(APIView):
+    authentication_classes = [OAuth2Authentication]
+    permission_classes = [TokenHasScope]
+    required_scopes = ["read"]
+```
+
+Several extras can be selected together:
+
+```bash
+ccly create bulletin --extras oauth_client oauth_provider
+```
 
 ## Start a site
 

@@ -7,6 +7,13 @@ from ccly.cli import local_language_code, local_time_zone, run
 from ccly.scaffold import config_class_name, template_root
 
 
+def _forget_app(name: str) -> None:
+    for loaded in list(sys.modules):
+        if loaded == name or loaded.startswith(f"{name}."):
+            del sys.modules[loaded]
+    importlib.invalidate_caches()
+
+
 def test_help():
     assert run([]) == 0
     assert run(["--help"]) == 0
@@ -60,6 +67,47 @@ def test_create_oauth_client_adapts_the_app(tmp_path, monkeypatch):
     assert 'EXTRAS = ["oauth_client"]' in extras
 
 
+def test_create_oauth_provider_adapts_the_app(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert run(["create", "bulletin", "--extras", "oauth_provider"]) == 0
+    package = tmp_path / "bulletin"
+    settings = (package / "src" / "bulletin" / "ccly_settings.py").read_text(encoding="utf-8")
+    assert 'INSTALLED_APPS = ["oauth2_provider"]' in settings
+    assert 'env("OAUTH2_ACCESS_TOKEN_EXPIRE_SECONDS", default="3600")' in settings
+    assert 'env("OIDC_RSA_PRIVATE_KEY", default="")' in settings
+    project = (package / "pyproject.toml").read_text(encoding="utf-8")
+    assert '"django-oauth-toolkit>=3.0,<4"' in project
+    extras = (package / "src" / "bulletin" / "ccly_extras.py").read_text(encoding="utf-8")
+    assert 'EXTRAS = ["oauth_provider"]' in extras
+
+
+def test_init_writes_oauth_provider_env_for_an_installed_app(tmp_path, monkeypatch):
+    src = tmp_path / "src"
+    package = src / "bulletin"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "ccly_extras.py").write_text(
+        'EXTRAS = ["oauth_provider"]\n',
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(src))
+    _forget_app("bulletin")
+    site = tmp_path / "site"
+    site.mkdir()
+    monkeypatch.chdir(site)
+    try:
+        assert run(["init", "bulletin"]) == 0
+        env = (site / ".env").read_text(encoding="utf-8")
+        assert "OAUTHLIB_INSECURE_TRANSPORT=1" in env
+        assert "OAUTH2_ACCESS_TOKEN_EXPIRE_SECONDS=3600" in env
+        assert "OAUTH2_REFRESH_TOKEN_EXPIRE_SECONDS=1209600" in env
+        assert "OAUTH2_PKCE_REQUIRED=true" in env
+        assert "OAUTH2_SCOPES=read:Read scope,write:Write scope" in env
+        assert "OIDC_RSA_PRIVATE_KEY=" in env
+    finally:
+        _forget_app("bulletin")
+
+
 def test_create_rejects_an_unknown_extra(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     assert run(["create", "bulletin", "--extras", "nope"]) == 2
@@ -77,6 +125,7 @@ def test_init_writes_oauth_client_env_for_an_installed_app(tmp_path, monkeypatch
         encoding="utf-8",
     )
     monkeypatch.syspath_prepend(str(src))
+    _forget_app("bulletin")
     site = tmp_path / "site"
     site.mkdir()
     monkeypatch.chdir(site)
@@ -90,10 +139,7 @@ def test_init_writes_oauth_client_env_for_an_installed_app(tmp_path, monkeypatch
         assert "OIDC_OP_USER_ENDPOINT=" in env
         assert "OIDC_RP_SIGN_ALGO=RS256" in env
     finally:
-        for loaded in list(sys.modules):
-            if loaded == "bulletin" or loaded.startswith("bulletin."):
-                del sys.modules[loaded]
-        importlib.invalidate_caches()
+        _forget_app("bulletin")
 
 
 def test_create_rejects_a_bad_name(tmp_path, monkeypatch, capsys):

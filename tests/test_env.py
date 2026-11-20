@@ -53,6 +53,60 @@ def test_required_env_rejects_a_default():
     assert advertised() == ()
 
 
+def test_oauth_provider_uses_env_defaults(monkeypatch):
+    for name in (
+        "OAUTH2_SCOPES",
+        "OAUTH2_ACCESS_TOKEN_EXPIRE_SECONDS",
+        "OAUTH2_REFRESH_TOKEN_EXPIRE_SECONDS",
+        "OAUTH2_PKCE_REQUIRED",
+        "OAUTH2_ROTATE_REFRESH_TOKEN",
+        "OAUTH2_REFRESH_TOKEN_REUSE_PROTECTION",
+        "OAUTH2_ALLOWED_REDIRECT_URI_SCHEMES",
+        "OIDC_RSA_PRIVATE_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    from ccly.extras.oauth_provider import OAuthProvider
+
+    namespace: dict = {}
+    exec(OAuthProvider().settings_block(), namespace)
+    provider = namespace["OAUTH2_PROVIDER"]
+    assert namespace["INSTALLED_APPS"] == ["oauth2_provider"]
+    assert provider["ACCESS_TOKEN_EXPIRE_SECONDS"] == 3600
+    assert provider["REFRESH_TOKEN_EXPIRE_SECONDS"] == 1209600
+    assert provider["PKCE_REQUIRED"] is True
+    assert provider["ROTATE_REFRESH_TOKEN"] is True
+    assert provider["REFRESH_TOKEN_REUSE_PROTECTION"] is True
+    assert provider["ALLOWED_REDIRECT_URI_SCHEMES"] == ["http", "https"]
+    assert provider["SCOPES"] == {"read": "Read scope", "write": "Write scope"}
+    assert "OIDC_ENABLED" not in provider
+
+
+def test_oauth_provider_enables_oidc_when_a_private_key_is_set(monkeypatch):
+    monkeypatch.setenv("OIDC_RSA_PRIVATE_KEY", "-----BEGIN PRIVATE KEY-----\\nabc")
+    monkeypatch.setenv("OAUTH2_SCOPES", "read:Read")
+    monkeypatch.setenv("OAUTH2_PKCE_REQUIRED", "false")
+    from ccly.extras.oauth_provider import OAuthProvider
+
+    namespace: dict = {}
+    exec(OAuthProvider().settings_block(), namespace)
+    provider = namespace["OAUTH2_PROVIDER"]
+    assert provider["OIDC_ENABLED"] is True
+    assert provider["OIDC_RSA_PRIVATE_KEY"].startswith("-----BEGIN")
+    assert provider["SCOPES"]["openid"] == "OpenID Connect scope"
+    assert provider["SCOPES"]["read"] == "Read"
+    assert provider["PKCE_REQUIRED"] is False
+
+
+def test_oauth_provider_is_mounted_at_o(monkeypatch):
+    import django.urls
+
+    monkeypatch.setattr(django.urls, "include", lambda name: name)
+    monkeypatch.setattr(django.urls, "path", lambda route, view: (route, view))
+    from ccly.extras.oauth_provider import OAuthProvider
+
+    assert OAuthProvider().urlpatterns() == [("o/", "oauth2_provider.urls")]
+
+
 def test_oauth_client_callback_is_mounted_at_oidc(monkeypatch):
     import django.urls
 
@@ -77,8 +131,13 @@ def test_app_setting_from_env_is_copied_onto_the_project(tmp_path, monkeypatch):
     for loaded in list(sys.modules):
         if loaded == "bulletin" or loaded.startswith("bulletin."):
             del sys.modules[loaded]
-    target = ModuleType("target")
-    contribute_settings(target, ["bulletin"])
-    assert target.CCLY_API_KEY == "secret"
-    assert advertised()[0].module == "bulletin.ccly_settings"
-    assert check_advertised_env(None) == []
+    try:
+        target = ModuleType("target")
+        contribute_settings(target, ["bulletin"])
+        assert target.CCLY_API_KEY == "secret"
+        assert advertised()[0].module == "bulletin.ccly_settings"
+        assert check_advertised_env(None) == []
+    finally:
+        for loaded in list(sys.modules):
+            if loaded == "bulletin" or loaded.startswith("bulletin."):
+                del sys.modules[loaded]
