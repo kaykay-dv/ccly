@@ -29,6 +29,7 @@ def test_create_writes_a_package(tmp_path, monkeypatch):
     contributed = (package / "src" / "my_app" / "ccly_settings.py").read_text(encoding="utf-8")
     assert "Uppercase names" in contributed
     assert 'CCLY_LOGO = "img/alaska.png"' in contributed
+    assert 'env("CCLY_API_KEY", required=True)' in contributed
     logo = package / "src" / "my_app" / "static" / "img" / "alaska.png"
     source = template_root() / "static" / "img" / "alaska.png"
     assert logo.read_bytes() == source.read_bytes()

@@ -10,6 +10,8 @@ class CclyProjectConfig(AppConfig):
         from django.conf import settings
         from django.contrib import admin
 
+        from ccly.project import checks  # noqa: F401
+
         admin.site.site_header = settings.CCLY_SITE_TITLE
         admin.site.site_title = settings.CCLY_SITE_TITLE
         admin.site.index_title = settings.CCLY_SITE_TITLE

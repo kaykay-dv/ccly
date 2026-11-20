@@ -109,10 +109,18 @@ For a public HTTPS server, set `CCLY_DEBUG=false`, `CCLY_COOKIE_SECURE=true`, `C
 
 Each app that provides a `urls` module is mounted at `/<app_name>/`.
 
-An app can also provide `ccly_settings.py`. Uppercase names in that module are added to the Django settings and are the same for every deployment, for example an external API URL:
+An app can also provide `ccly_settings.py`. Uppercase names in that module are added to the Django settings, for example an external API URL:
 
 ```python
 EXTERNAL_API_URL = "https://api.example.com"
+```
+
+A setting that belongs to the app, but must be configured per site, is read from `.env` with `env`. ccly records each call. Startup fails when a required variable is missing or blank:
+
+```python
+from ccly.env import env
+
+CCLY_API_KEY = env("CCLY_API_KEY", required=True)
 ```
 
 `CCLY_LOGO` is the static path of the image shown to the left of the project name in the admin. A new app sets it to `img/alaska.png` and ships that file in `src/<app>/static/img`. Change the setting, and add the new file under `static/`, to use another logo.

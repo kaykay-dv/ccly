@@ -16,10 +16,10 @@ def is_setting_name(name: str) -> bool:
 def contribute_settings(target: ModuleType, app_names: list[str]) -> None:
     """Copy uppercase names from each app's ``ccly_settings`` module onto ``target``.
 
-    These values belong to the app package, so they are the same for every
-    deployment. A later app replaces a value defined by ccly or by an earlier
-    app. ``INSTALLED_APPS`` is the exception: contributed app names are
-    appended, and names already present are left in place.
+    These values belong to the app package. A later app replaces a value
+    defined by ccly or by an earlier app. ``INSTALLED_APPS`` is the exception:
+    contributed app names are appended, and names already present are left in
+    place. Values read with ``ccly.env.env`` come from the site environment.
     """
     importlib.invalidate_caches()
     for app_name in app_names:

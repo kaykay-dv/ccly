@@ -1,5 +1,10 @@
 # Changes
 
+## App environment
+
+- Apps can advertise `.env` settings from `ccly_settings.py` with `env`, including `env("CCLY_API_KEY", required=True)`.
+- Startup checks fail when a required advertised variable is missing or blank.
+
 ## Packaging
 
 - Marked ccly as alpha in `pyproject.toml` and added Django and Python classifiers.
