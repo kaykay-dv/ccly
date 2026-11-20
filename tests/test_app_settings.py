@@ -89,6 +89,16 @@ def test_installed_apps_are_appended(tmp_path, monkeypatch):
     ]
 
 
+def test_logo_setting_replaces_the_default(tmp_path, monkeypatch):
+    _forget("bulletin")
+    _package(tmp_path, "bulletin", 'CCLY_LOGO = "img/bulletin.png"\n')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    target = ModuleType("target")
+    target.CCLY_LOGO = "img/alaska.png"
+    contribute_settings(target, ["bulletin"])
+    assert target.CCLY_LOGO == "img/bulletin.png"
+
+
 def test_installed_apps_must_be_a_list(tmp_path, monkeypatch):
     _forget("bulletin")
     _package(tmp_path, "bulletin", "INSTALLED_APPS = 3\n")

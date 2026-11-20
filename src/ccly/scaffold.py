@@ -43,15 +43,39 @@ def create_app(app_name: str, destination: Path | None = None) -> int:
 
 
 def _copy_tree(root: Path, destination: Path, replacements: dict[str, str]) -> None:
+    app_name = replacements["__APP_NAME__"]
     for path in root.rglob("*"):
         if not path.is_file():
             continue
-        relative = path.relative_to(root)
+        relative = _package_static(path.relative_to(root), app_name)
         parts = [_replace(part, replacements) for part in relative.parts]
         target = destination.joinpath(*parts)
-        text = path.read_text(encoding="utf-8")
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(_replace(text, replacements), encoding="utf-8")
+        data = path.read_bytes()
+        if _is_utf8(data):
+            text = _replace(data.decode("utf-8"), replacements)
+            target.write_text(text, encoding="utf-8")
+        else:
+            target.write_bytes(data)
+
+
+def _package_static(relative: Path, app_name: str) -> Path:
+    """Put template ``static/`` files inside the installable package.
+
+    Django serves files from an installed app's ``static`` directory. A file
+    left next to ``pyproject.toml`` would not be installed with the package.
+    """
+    if relative.parts and relative.parts[0] == "static":
+        return Path("src", app_name, *relative.parts)
+    return relative
+
+
+def _is_utf8(data: bytes) -> bool:
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
+    return True
 
 
 def _replace(value: str, replacements: dict[str, str]) -> str:

@@ -37,9 +37,12 @@ Keep the src layout. The import name and the PyPI name are both `__APP_NAME__`.
 Values that are the same for every deployment belong in `src/__APP_NAME__/ccly_settings.py`. ccly copies uppercase names from that module into its own Django settings. A name that ccly, or an earlier app, already set is replaced. Use this for an external API URL and other constants shipped with the package:
 
 ```python
+CCLY_LOGO = "img/alaska.png"
 EXTERNAL_API_URL = "https://api.example.com"
 INSTALLED_APPS = ["third.party.app"]
 ```
+
+`CCLY_LOGO` is the logo beside the project name in the admin navbar. It is a path relative to this app's `static/` directory. The default file is `static/img/alaska.png`.
 
 `INSTALLED_APPS` is not replaced. Those names are appended to the project's list, and a name that is already installed is skipped. Read the resulting values with `django.conf.settings`. Do not import Django settings from `ccly_settings.py`. Per-deployment values stay in the site's `.env` file, which ccly reads.
 

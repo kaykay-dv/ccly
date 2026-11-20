@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from ccly.cli import run
-from ccly.scaffold import config_class_name
+from ccly.scaffold import config_class_name, template_root
 
 
 def test_help():
@@ -27,6 +27,10 @@ def test_create_writes_a_package(tmp_path, monkeypatch):
     assert (package / "src" / "my_app" / "migrations" / "__init__.py").is_file()
     contributed = (package / "src" / "my_app" / "ccly_settings.py").read_text(encoding="utf-8")
     assert "Uppercase names" in contributed
+    assert 'CCLY_LOGO = "img/alaska.png"' in contributed
+    logo = package / "src" / "my_app" / "static" / "img" / "alaska.png"
+    source = template_root() / "static" / "img" / "alaska.png"
+    assert logo.read_bytes() == source.read_bytes()
 
 
 def test_create_rejects_a_bad_name(tmp_path, monkeypatch, capsys):

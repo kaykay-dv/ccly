@@ -78,6 +78,8 @@ An app can also provide `ccly_settings.py`. Uppercase names in that module are a
 EXTERNAL_API_URL = "https://api.example.com"
 ```
 
+`CCLY_LOGO` is the static path of the image shown to the left of the project name in the admin. A new app sets it to `img/alaska.png` and ships that file in `src/<app>/static/img`. Change the setting, and add the new file under `static/`, to use another logo.
+
 A later app replaces a value that ccly, or an earlier app, already set. `INSTALLED_APPS` is extended instead: names from the app are appended, and names already present stay where they are.
 
 ```python

@@ -50,8 +50,11 @@ def site(tmp_path_factory):
         settings_module = (
             app_parent / APP_NAME / "src" / APP_NAME / "ccly_settings.py"
         )
+        existing = settings_module.read_text(encoding="utf-8")
+        if not existing.endswith("\n"):
+            existing += "\n"
         settings_module.write_text(
-            'EXTERNAL_API_URL = "https://api.example.com"\n',
+            existing + 'EXTERNAL_API_URL = "https://api.example.com"\n',
             encoding="utf-8",
         )
         _install_app(app_parent / APP_NAME, APP_NAME)
@@ -109,6 +112,24 @@ def test_login_uses_the_package_name_and_password_reset(site):
     assert site["app_name"] in body
     assert "/m/password_reset/" in body
     assert "Forgotten your login credentials?" in body
+
+
+def test_admin_navbar_shows_the_logo_beside_the_project_name(site):
+    from django.conf import settings
+    from django.contrib.staticfiles.finders import find
+
+    assert settings.CCLY_LOGO == "img/alaska.png"
+    found = find("img/alaska.png")
+    assert found is not None
+    assert Path(found).read_bytes().startswith(b"\x89PNG")
+
+    response = site["staff"].get("/m/")
+    body = response.content.decode()
+    assert response.status_code == 200
+    start = body.index('id="site-name"')
+    brand = body[start : body.index("</div>", start)]
+    assert brand.index('class="ccly-logo"') < brand.index(site["app_name"])
+    assert 'src="/static/img/alaska.png"' in brand
 
 
 def test_admin_header_links_to_openapi(site):

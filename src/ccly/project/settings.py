@@ -57,6 +57,8 @@ DEBUG = _env_bool("CCLY_DEBUG", False)
 ALLOWED_HOSTS = _env_list("CCLY_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CCLY_APPS = _env_list("CCLY_APPS", "")
 CCLY_SITE_TITLE = site_title(CCLY_APPS, os.environ.get("CCLY_SITE_NAME", ""))
+# An app replaces this by setting CCLY_LOGO in its ccly_settings module.
+CCLY_LOGO = "img/alaska.png"
 
 INSTALLED_APPS = [
     "ccly.project.apps.CclyProjectConfig",
