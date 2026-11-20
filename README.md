@@ -64,8 +64,8 @@ ccly shell
 | `CCLY_APPS` | Comma-separated import names to install and mount | App names passed to `ccly init` |
 | `CCLY_DATABASE_URL` | Database URL | `sqlite:///db.sqlite3` |
 | `CCLY_CONN_MAX_AGE` | Persistent database connections, in seconds | `0` |
-| `CCLY_TIME_ZONE` | Time zone | `UTC` |
-| `CCLY_LANGUAGE_CODE` | Language code | `en-us` |
+| `CCLY_TIME_ZONE` | Time zone | Machine time zone, or `UTC` |
+| `CCLY_LANGUAGE_CODE` | Language code | Machine language, or `en-us` |
 | `CCLY_STATIC_URL` | Static URL | `static/` |
 | `CCLY_SESSION_COOKIE_NAME` | Session cookie. Unique per site | `ccly_<id>_session` |
 | `CCLY_CSRF_COOKIE_NAME` | CSRF cookie. Unique per site | `ccly_<id>_csrf` |

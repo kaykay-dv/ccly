@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from ccly.cli import run
+from ccly.cli import local_language_code, local_time_zone, run
 from ccly.scaffold import config_class_name, template_root
 
 
@@ -77,6 +77,34 @@ def test_init_writes_env_without_a_fixed_site_name(tmp_path, monkeypatch, capsys
     captured = capsys.readouterr()
     assert "pip install -e /path/to/bulletin" in captured.err
     assert "pip install -e /path/to/kbdr" in captured.err
+
+
+def test_init_uses_the_machine_locale_when_it_can(tmp_path, monkeypatch):
+    monkeypatch.setenv("TZ", "Europe/Vienna")
+    monkeypatch.setenv("LANG", "de_AT.UTF-8")
+    monkeypatch.delenv("LC_ALL", raising=False)
+    monkeypatch.delenv("LC_MESSAGES", raising=False)
+    monkeypatch.chdir(tmp_path)
+    assert run(["init", "bulletin"]) == 0
+    env = Path(".env").read_text(encoding="utf-8")
+    assert "CCLY_TIME_ZONE=Europe/Vienna" in env
+    assert "CCLY_LANGUAGE_CODE=de-at" in env
+
+
+def test_init_falls_back_when_the_machine_locale_cannot_be_read(tmp_path, monkeypatch):
+    monkeypatch.setenv("TZ", "Not/AZone")
+    for name in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        monkeypatch.setenv(name, "C")
+    monkeypatch.setattr("ccly.cli._zone_from_localtime", lambda: None)
+    monkeypatch.setattr("ccly.cli._macos_language", lambda: None)
+    monkeypatch.setattr("ccly.cli._language_from_process_locale", lambda: None)
+    assert local_time_zone() == "UTC"
+    assert local_language_code() == "en-us"
+    monkeypatch.chdir(tmp_path)
+    assert run(["init", "bulletin"]) == 0
+    env = Path(".env").read_text(encoding="utf-8")
+    assert "CCLY_TIME_ZONE=UTC" in env
+    assert "CCLY_LANGUAGE_CODE=en-us" in env
 
 
 def test_init_does_not_replace_env_without_force(tmp_path, monkeypatch):

@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import locale
 import os
 import secrets
+import subprocess
 import sys
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from ccly.scaffold import create_app, validate_app_name
 
@@ -118,8 +121,8 @@ def _render_env(app_names: list[str]) -> str:
         f"CCLY_APPS={apps}",
         "CCLY_DATABASE_URL=sqlite:///db.sqlite3",
         "CCLY_CONN_MAX_AGE=0",
-        "CCLY_TIME_ZONE=UTC",
-        "CCLY_LANGUAGE_CODE=en-us",
+        f"CCLY_TIME_ZONE={local_time_zone()}",
+        f"CCLY_LANGUAGE_CODE={local_language_code()}",
         "CCLY_STATIC_URL=static/",
         "",
         "# Unique to this site, so another ccly instance can use the same domain.",
@@ -161,6 +164,120 @@ def _render_env(app_names: list[str]) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def local_time_zone() -> str:
+    """IANA time zone of this machine, or UTC when it cannot be read."""
+    candidate = os.environ.get("TZ", "").strip()
+    if candidate.startswith(":"):
+        candidate = candidate[1:]
+    if _valid_zone(candidate):
+        return candidate
+    found = _zone_from_localtime()
+    if found:
+        return found
+    return "UTC"
+
+
+def local_language_code() -> str:
+    """Django language code of this machine, or en-us when it cannot be read."""
+    for name in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        code = _django_language(os.environ.get(name, ""))
+        if code:
+            return code
+    for reader in (_macos_language, _language_from_process_locale):
+        code = reader()
+        if code:
+            return code
+    return "en-us"
+
+
+def _valid_zone(name: str) -> bool:
+    if not name:
+        return False
+    try:
+        ZoneInfo(name)
+    except ZoneInfoNotFoundError:
+        return False
+    return True
+
+
+def _zone_from_localtime() -> str | None:
+    path = Path("/etc/localtime")
+    try:
+        target = path.resolve(strict=True)
+    except OSError:
+        return None
+    parts = target.parts
+    if "zoneinfo" not in parts:
+        return None
+    name = "/".join(parts[parts.index("zoneinfo") + 1 :])
+    for candidate in (name, _strip_zone_prefix(name)):
+        if candidate and _valid_zone(candidate):
+            return candidate
+    return None
+
+
+def _strip_zone_prefix(name: str) -> str:
+    for prefix in ("posix/", "right/"):
+        if name.startswith(prefix):
+            return name[len(prefix) :]
+    return ""
+
+
+def _django_language(raw: str) -> str | None:
+    token = raw.strip().split(".", 1)[0].split("@", 1)[0]
+    if not token or token in {"C", "POSIX"}:
+        return None
+    pieces = token.replace("-", "_").split("_")
+    language = pieces[0]
+    if not language.isalpha() or not 2 <= len(language) <= 3:
+        return None
+    if len(pieces) == 1:
+        return language.lower()
+    region = pieces[1]
+    if not region.isalnum() or not 2 <= len(region) <= 8:
+        return None
+    return f"{language.lower()}-{region.lower()}"
+
+
+def _macos_language() -> str | None:
+    if sys.platform != "darwin":
+        return None
+    try:
+        completed = subprocess.run(
+            ["defaults", "read", "-g", "AppleLocale"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    return _django_language(completed.stdout.strip())
+
+
+def _language_from_process_locale() -> str | None:
+    try:
+        saved = locale.setlocale(locale.LC_ALL)
+    except locale.Error:
+        saved = None
+    try:
+        locale.setlocale(locale.LC_ALL, "")
+        language, _encoding = locale.getlocale(locale.LC_CTYPE)
+    except locale.Error:
+        return None
+    finally:
+        if saved is not None:
+            try:
+                locale.setlocale(locale.LC_ALL, saved)
+            except locale.Error:
+                pass
+    if not language:
+        return None
+    return _django_language(language)
 
 
 def _parse(parser: argparse.ArgumentParser, argv: list[str]):
