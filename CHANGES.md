@@ -1,5 +1,9 @@
 # Changes
 
+## Extras
+
+- `ccly create --extras` accepts plugin names. `oauth_client` adds mozilla-django-oidc to the app and writes its settings into `.env` on `ccly init`.
+
 ## App environment
 
 - Apps can advertise `.env` settings from `ccly_settings.py` with `env`, including `env("CCLY_API_KEY", required=True)`.

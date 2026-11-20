@@ -6,6 +6,9 @@ import keyword
 import sys
 from pathlib import Path
 
+from ccly.extras import UnknownExtrasError, resolve_extras
+from ccly.extras.base import Extra
+
 
 def config_class_name(app_name: str) -> str:
     return "".join(part.capitalize() for part in app_name.split("_")) + "Config"
@@ -21,10 +24,24 @@ def template_root() -> Path:
     return Path(__file__).resolve().parent / "templates" / "app"
 
 
-def create_app(app_name: str, destination: Path | None = None) -> int:
+def create_app(
+    app_name: str,
+    destination: Path | None = None,
+    *,
+    extras: list[str] | None = None,
+) -> int:
     error = validate_app_name(app_name)
     if error:
         print(error, file=sys.stderr)
+        return 2
+    try:
+        chosen = resolve_extras(extras or [])
+    except UnknownExtrasError as exc:
+        known = ", ".join(exc.known) or "(none)"
+        print(
+            f"Unknown extras: {', '.join(exc.names)}. Known: {known}.",
+            file=sys.stderr,
+        )
         return 2
     target = destination if destination is not None else Path.cwd() / app_name
     if target.exists():
@@ -35,7 +52,10 @@ def create_app(app_name: str, destination: Path | None = None) -> int:
         "__APP_CLASS__": config_class_name(app_name),
     }
     _copy_tree(template_root(), target, replacements)
+    _apply_extras(target, app_name, chosen)
     print(f"Created {target}")
+    if chosen:
+        print("Extras: " + ", ".join(extra.name for extra in chosen))
     print("Install it, then point a site at it:")
     print(f"  pip install -e {target}")
     print(f"  ccly init {app_name}")
@@ -57,6 +77,38 @@ def _copy_tree(root: Path, destination: Path, replacements: dict[str, str]) -> N
             target.write_text(text, encoding="utf-8")
         else:
             target.write_bytes(data)
+
+
+def _apply_extras(destination: Path, app_name: str, extras: list[Extra]) -> None:
+    if not extras:
+        return
+    settings_path = destination / "src" / app_name / "ccly_settings.py"
+    blocks = [extra.settings_block().rstrip() for extra in extras if extra.settings_block()]
+    if blocks:
+        current = settings_path.read_text(encoding="utf-8").rstrip()
+        settings_path.write_text(current + "\n\n" + "\n\n".join(blocks) + "\n", encoding="utf-8")
+    dependencies = [dep for extra in extras for dep in extra.dependencies()]
+    if dependencies:
+        project_path = destination / "pyproject.toml"
+        project_path.write_text(
+            _add_dependencies(project_path.read_text(encoding="utf-8"), dependencies),
+            encoding="utf-8",
+        )
+    names = ", ".join(f'"{extra.name}"' for extra in extras)
+    extras_path = destination / "src" / app_name / "ccly_extras.py"
+    extras_path.write_text(
+        '"""Extras selected with ``ccly create --extras``."""\n\n'
+        f"EXTRAS = [{names}]\n",
+        encoding="utf-8",
+    )
+
+
+def _add_dependencies(source: str, dependencies: list[str]) -> str:
+    marker = "\n]\n\n[tool.hatch.build.targets.wheel]"
+    if marker not in source:
+        raise RuntimeError("pyproject.toml has no dependency list to extend.")
+    added = "\n".join(f'    "{dependency}",' for dependency in dependencies)
+    return source.replace(marker, "\n" + added + marker, 1)
 
 
 def _package_static(relative: Path, app_name: str) -> Path:

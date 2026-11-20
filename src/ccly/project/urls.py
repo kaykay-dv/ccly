@@ -6,6 +6,8 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from ccly.extras import urlpatterns_for_apps
+
 urlpatterns = [
     path(
         "m/password_reset/",
@@ -35,6 +37,8 @@ urlpatterns = [
         name="swagger-ui",
     ),
 ]
+
+urlpatterns.extend(urlpatterns_for_apps(settings.CCLY_APPS))
 
 for _app_name in settings.CCLY_APPS:
     if importlib.util.find_spec(f"{_app_name}.urls") is not None:

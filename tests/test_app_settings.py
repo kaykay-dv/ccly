@@ -89,6 +89,37 @@ def test_installed_apps_are_appended(tmp_path, monkeypatch):
     ]
 
 
+def test_middleware_is_appended_and_axes_stays_last(tmp_path, monkeypatch):
+    _forget("bulletin")
+    _package(
+        tmp_path,
+        "bulletin",
+        'MIDDLEWARE = ["mozilla_django_oidc.middleware.SessionRefresh"]\n'
+        'AUTHENTICATION_BACKENDS = ["mozilla_django_oidc.auth.OIDCAuthenticationBackend"]\n',
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    target = ModuleType("target")
+    target.MIDDLEWARE = [
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "axes.middleware.AxesMiddleware",
+    ]
+    target.AUTHENTICATION_BACKENDS = [
+        "axes.backends.AxesStandaloneBackend",
+        "django.contrib.auth.backends.ModelBackend",
+    ]
+    contribute_settings(target, ["bulletin"])
+    assert target.MIDDLEWARE == [
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "mozilla_django_oidc.middleware.SessionRefresh",
+        "axes.middleware.AxesMiddleware",
+    ]
+    assert target.AUTHENTICATION_BACKENDS == [
+        "axes.backends.AxesStandaloneBackend",
+        "django.contrib.auth.backends.ModelBackend",
+        "mozilla_django_oidc.auth.OIDCAuthenticationBackend",
+    ]
+
+
 def test_logo_setting_replaces_the_default(tmp_path, monkeypatch):
     _forget("bulletin")
     _package(tmp_path, "bulletin", 'CCLY_LOGO = "img/bulletin.png"\n')

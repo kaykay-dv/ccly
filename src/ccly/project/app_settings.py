@@ -9,6 +9,10 @@ from types import ModuleType
 from django.core.exceptions import ImproperlyConfigured
 
 
+_LIST_SETTINGS = {"INSTALLED_APPS", "MIDDLEWARE", "AUTHENTICATION_BACKENDS"}
+_KEEP_LAST = ("axes.middleware.AxesMiddleware",)
+
+
 def is_setting_name(name: str) -> bool:
     return bool(name) and name[0].isalpha() and name.isupper()
 
@@ -17,9 +21,10 @@ def contribute_settings(target: ModuleType, app_names: list[str]) -> None:
     """Copy uppercase names from each app's ``ccly_settings`` module onto ``target``.
 
     These values belong to the app package. A later app replaces a value
-    defined by ccly or by an earlier app. ``INSTALLED_APPS`` is the exception:
-    contributed app names are appended, and names already present are left in
-    place. Values read with ``ccly.env.env`` come from the site environment.
+    defined by ccly or by an earlier app. ``INSTALLED_APPS``, ``MIDDLEWARE``,
+    and ``AUTHENTICATION_BACKENDS`` are appended instead, and names already
+    present are left in place. ``axes.middleware.AxesMiddleware`` stays last.
+    Values read with ``ccly.env.env`` come from the site environment.
     """
     importlib.invalidate_caches()
     for app_name in app_names:
@@ -30,23 +35,29 @@ def contribute_settings(target: ModuleType, app_names: list[str]) -> None:
         for name, value in vars(module).items():
             if not is_setting_name(name):
                 continue
-            if name == "INSTALLED_APPS":
-                setattr(target, name, _extend_installed_apps(getattr(target, name, ()), value, module_name))
+            if name in _LIST_SETTINGS:
+                setattr(
+                    target,
+                    name,
+                    _extend_names(getattr(target, name, ()), value, module_name, name),
+                )
             else:
                 setattr(target, name, value)
 
 
-def _extend_installed_apps(existing, contributed, module_name: str) -> list[str]:
+def _extend_names(existing, contributed, module_name: str, setting: str) -> list[str]:
     if isinstance(contributed, str):
         contributed = [contributed]
     elif not isinstance(contributed, (list, tuple)):
-        raise ImproperlyConfigured(
-            f"{module_name}.INSTALLED_APPS must be a list of app names."
-        )
+        raise ImproperlyConfigured(f"{module_name}.{setting} must be a list of names.")
     merged = list(existing)
     present = set(merged)
     for name in contributed:
         if name not in present:
             merged.append(name)
             present.add(name)
+    for name in _KEEP_LAST:
+        if name in present:
+            merged = [item for item in merged if item != name]
+            merged.append(name)
     return merged

@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from ccly.extras import env_lines_for_apps
 from ccly.scaffold import create_app, validate_app_name
 
 HELP = """\
@@ -21,13 +22,13 @@ The Django project lives in this package. A site is a directory with a .env
 file. Apps you create are separate packages that the site loads by name.
 
 Usage:
-  ccly create <app_name>
+  ccly create <app_name> [--extras EXTRA ...]
   ccly init <app_name> [<app_name> ...] [--force]
   ccly ini <app_name> [<app_name> ...] [--force]
   ccly <django management command> [options]
 
 Examples:
-  ccly create bulletin
+  ccly create bulletin --extras oauth_client
   pip install -e ./bulletin
   ccly init bulletin
   ccly migrate
@@ -59,10 +60,17 @@ def _command_create(argv: list[str]) -> int:
         description="Create a Django app packaged for PyPI.",
     )
     parser.add_argument("app_name", help="Importable package name")
+    parser.add_argument(
+        "--extras",
+        nargs="+",
+        default=[],
+        metavar="EXTRA",
+        help="Optional features to include. Known: oauth_client.",
+    )
     parsed = _parse(parser, argv)
     if isinstance(parsed, int):
         return parsed
-    return create_app(parsed.app_name)
+    return create_app(parsed.app_name, extras=parsed.extras)
 
 
 def _command_init(argv: list[str]) -> int:
@@ -163,6 +171,9 @@ def _render_env(app_names: list[str]) -> str:
         "CCLY_RATELIMIT_FAIL_OPEN=false",
         "",
     ]
+    lines.extend(env_lines_for_apps(app_names))
+    if lines[-1] != "":
+        lines.append("")
     return "\n".join(lines)
 
 

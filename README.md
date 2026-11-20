@@ -28,6 +28,16 @@ pip install -e .
 
 That writes a src-layout package, including `AGENTS.md`. It includes `GET /bulletin/health/`, which returns the JSON string `"OK"`.
 
+### Extras
+
+`--extras` takes one or more optional features. Each feature is a plugin. The only one so far is `oauth_client`, which adds [mozilla-django-oidc](https://github.com/mozilla/mozilla-django-oidc):
+
+```bash
+ccly create bulletin --extras oauth_client
+```
+
+The app's `ccly_settings.py` wires the OpenID Connect client. After the app is installed, `ccly init` writes the provider's client id, secret, and endpoint URLs into `.env`. The callback URL is `http://127.0.0.1:8000/oidc/callback/`.
+
 ## Start a site
 
 From any other directory:

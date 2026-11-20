@@ -53,6 +53,16 @@ def test_required_env_rejects_a_default():
     assert advertised() == ()
 
 
+def test_oauth_client_callback_is_mounted_at_oidc(monkeypatch):
+    import django.urls
+
+    monkeypatch.setattr(django.urls, "include", lambda name: name)
+    monkeypatch.setattr(django.urls, "path", lambda route, view: (route, view))
+    from ccly.extras.oauth_client import OAuthClient
+
+    assert OAuthClient().urlpatterns() == [("oidc/", "mozilla_django_oidc.urls")]
+
+
 def test_app_setting_from_env_is_copied_onto_the_project(tmp_path, monkeypatch):
     monkeypatch.setenv("CCLY_API_KEY", "secret")
     package = tmp_path / "bulletin"

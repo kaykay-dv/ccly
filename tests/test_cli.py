@@ -1,4 +1,6 @@
+import importlib
 import re
+import sys
 from pathlib import Path
 
 from ccly.cli import local_language_code, local_time_zone, run
@@ -33,6 +35,57 @@ def test_create_writes_a_package(tmp_path, monkeypatch):
     logo = package / "src" / "my_app" / "static" / "img" / "alaska.png"
     source = template_root() / "static" / "img" / "alaska.png"
     assert logo.read_bytes() == source.read_bytes()
+
+
+def test_create_oauth_client_adapts_the_app(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert run(["create", "bulletin", "--extras", "oauth_client", "oauth_client"]) == 0
+    package = tmp_path / "bulletin"
+    settings = (package / "src" / "bulletin" / "ccly_settings.py").read_text(encoding="utf-8")
+    assert "from ccly.env import env" in settings
+    assert 'OIDC_RP_CLIENT_ID = env("OIDC_RP_CLIENT_ID", required=True)' in settings
+    assert 'INSTALLED_APPS = ["mozilla_django_oidc"]' in settings
+    assert settings.count("OIDC_RP_CLIENT_ID = env") == 1
+    project = (package / "pyproject.toml").read_text(encoding="utf-8")
+    assert '"mozilla-django-oidc>=4.0"' in project
+    extras = (package / "src" / "bulletin" / "ccly_extras.py").read_text(encoding="utf-8")
+    assert 'EXTRAS = ["oauth_client"]' in extras
+
+
+def test_create_rejects_an_unknown_extra(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    assert run(["create", "bulletin", "--extras", "nope"]) == 2
+    assert "Unknown extras: nope" in capsys.readouterr().err
+    assert not (tmp_path / "bulletin").exists()
+
+
+def test_init_writes_oauth_client_env_for_an_installed_app(tmp_path, monkeypatch):
+    src = tmp_path / "src"
+    package = src / "bulletin"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "ccly_extras.py").write_text(
+        'EXTRAS = ["oauth_client"]\n',
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(src))
+    site = tmp_path / "site"
+    site.mkdir()
+    monkeypatch.chdir(site)
+    try:
+        assert run(["init", "bulletin"]) == 0
+        env = (site / ".env").read_text(encoding="utf-8")
+        assert "OIDC_RP_CLIENT_ID=" in env
+        assert "OIDC_RP_CLIENT_SECRET=" in env
+        assert "OIDC_OP_AUTHORIZATION_ENDPOINT=" in env
+        assert "OIDC_OP_TOKEN_ENDPOINT=" in env
+        assert "OIDC_OP_USER_ENDPOINT=" in env
+        assert "OIDC_RP_SIGN_ALGO=RS256" in env
+    finally:
+        for loaded in list(sys.modules):
+            if loaded == "bulletin" or loaded.startswith("bulletin."):
+                del sys.modules[loaded]
+        importlib.invalidate_caches()
 
 
 def test_create_rejects_a_bad_name(tmp_path, monkeypatch, capsys):
