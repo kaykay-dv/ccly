@@ -2,6 +2,7 @@
 
 ## Documentation
 
+- Show the Alaska logo at the top of `README.md`.
 - `ccly create` adds a Sphinx project with the Read the Docs theme and builds the HTML docs.
 - Generated `AGENTS.md` requires the documentation to be updated whenever the app changes.
 

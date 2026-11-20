@@ -1,5 +1,7 @@
 # ccly
 
+![Alaska](src/ccly/templates/app/static/img/alaska.png)
+
 ccly (a nod to "Cicely" in [Northern Exposure](https://en.wikipedia.org/wiki/Northern_Exposure)) is a Django project you carry with you. It is particularly targeted at those who want to write Django-based microservices. ccly is opinionated in that it comes with a variety of pre-selected third-party apps.
 
 The project lives in this package. A site is only a directory with a `.env` file. The apps you build are separate, publishable packages.
