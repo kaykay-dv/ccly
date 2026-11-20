@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from ccly.cli import run
@@ -59,6 +60,20 @@ def test_init_writes_env_without_a_fixed_site_name(tmp_path, monkeypatch, capsys
     assert "CCLY_RATELIMIT_RATE=60/m" in env
     assert "CCLY_RATELIMIT_KEY=user_or_ip" in env
     assert "CCLY_RATELIMIT_FAIL_OPEN=false" in env
+    token = re.search(r"CCLY_SESSION_COOKIE_NAME=ccly_([0-9a-f]{8})_session", env)
+    assert token
+    site = token.group(1)
+    assert f"CCLY_CSRF_COOKIE_NAME=ccly_{site}_csrf" in env
+    assert f"CCLY_LANGUAGE_COOKIE_NAME=ccly_{site}_language" in env
+    assert f"CCLY_CACHE_PREFIX=ccly_{site}" in env
+    assert "CCLY_COOKIE_SECURE=false" in env
+    assert "CCLY_SECURE_SSL_REDIRECT=false" in env
+    assert "CCLY_SECURE_HSTS_SECONDS=0" in env
+    assert "CCLY_SECURE_PROXY_SSL_HEADER=" in env
+    assert "CCLY_CSRF_TRUSTED_ORIGINS=" in env
+    assert "CCLY_CONN_MAX_AGE=0" in env
+    assert "CCLY_EMAIL_HOST=" in env
+    assert "CCLY_EMAIL_PORT=587" in env
     captured = capsys.readouterr()
     assert "pip install -e /path/to/bulletin" in captured.err
     assert "pip install -e /path/to/kbdr" in captured.err
@@ -74,6 +89,25 @@ def test_init_does_not_replace_env_without_force(tmp_path, monkeypatch):
     replaced = Path(".env").read_text(encoding="utf-8")
     assert replaced != original
     assert "CCLY_APPS=kbdr" in replaced
+
+
+def test_init_cookie_names_differ_between_sites(tmp_path, monkeypatch):
+    first = tmp_path / "one"
+    second = tmp_path / "two"
+    first.mkdir()
+    second.mkdir()
+    monkeypatch.chdir(first)
+    assert run(["init", "bulletin"]) == 0
+    monkeypatch.chdir(second)
+    assert run(["init", "bulletin"]) == 0
+
+    def cookie_name(directory: Path) -> str:
+        for line in (directory / ".env").read_text(encoding="utf-8").splitlines():
+            if line.startswith("CCLY_SESSION_COOKIE_NAME="):
+                return line
+        raise AssertionError("session cookie name was not written")
+
+    assert cookie_name(first) != cookie_name(second)
 
 
 def test_init_rejects_a_bad_name(tmp_path, monkeypatch):

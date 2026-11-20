@@ -1,6 +1,7 @@
 import importlib
 import importlib.metadata
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -103,6 +104,27 @@ def test_installed_distribution_name_matches_the_package(site):
     assert settings.CCLY_SITE_TITLE == site["app_name"]
     assert admin.site.site_header == site["app_name"]
     assert admin.site.site_title == site["app_name"]
+
+
+def test_site_uses_its_own_cookies_and_local_production_defaults(site):
+    from django.conf import settings
+
+    name = settings.SESSION_COOKIE_NAME
+    token = re.fullmatch(r"ccly_([0-9a-f]{8})_session", name)
+    assert token
+    site_id = token.group(1)
+    assert settings.CSRF_COOKIE_NAME == f"ccly_{site_id}_csrf"
+    assert settings.LANGUAGE_COOKIE_NAME == f"ccly_{site_id}_language"
+    assert settings.CACHES["default"]["KEY_PREFIX"] == f"ccly_{site_id}"
+    assert settings.SESSION_COOKIE_SECURE is False
+    assert settings.CSRF_COOKIE_SECURE is False
+    assert settings.SECURE_SSL_REDIRECT is False
+    assert settings.SECURE_HSTS_SECONDS == 0
+    assert settings.CSRF_TRUSTED_ORIGINS == []
+    assert settings.DATABASES["default"]["CONN_MAX_AGE"] == 0
+
+    response = site["anonymous"].get("/m/login/")
+    assert settings.CSRF_COOKIE_NAME in response.cookies
 
 
 def test_login_uses_the_package_name_and_password_reset(site):

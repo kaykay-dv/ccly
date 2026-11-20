@@ -63,10 +63,35 @@ ccly shell
 | `CCLY_ALLOWED_HOSTS` | Comma-separated hosts |
 | `CCLY_APPS` | Comma-separated import names to install and mount |
 | `CCLY_DATABASE_URL` | Database URL, default `sqlite:///db.sqlite3` |
+| `CCLY_CONN_MAX_AGE` | Persistent database connections in seconds, default `0` |
 | `CCLY_TIME_ZONE` | Time zone |
 | `CCLY_LANGUAGE_CODE` | Language code |
+| `CCLY_STATIC_URL` | Static URL, default `static/` |
+| `CCLY_SESSION_COOKIE_NAME` | Session cookie. Unique per site |
+| `CCLY_CSRF_COOKIE_NAME` | CSRF cookie. Unique per site |
+| `CCLY_LANGUAGE_COOKIE_NAME` | Language cookie. Unique per site |
+| `CCLY_CACHE_PREFIX` | Cache key prefix. Unique per site |
+| `CCLY_COOKIE_DOMAIN` | Cookie domain. Empty keeps cookies on this host |
+| `CCLY_SESSION_COOKIE_PATH` | Session cookie path, default `/` |
+| `CCLY_CSRF_COOKIE_PATH` | CSRF cookie path, default `/` |
+| `CCLY_SESSION_COOKIE_SAMESITE` | `Lax`, `Strict`, or `None` |
+| `CCLY_CSRF_COOKIE_SAMESITE` | `Lax`, `Strict`, or `None` |
+| `CCLY_COOKIE_SECURE` | Secure flag for the session, CSRF, and language cookies |
+| `CCLY_SECURE_SSL_REDIRECT` | Redirect HTTP to HTTPS |
+| `CCLY_SECURE_HSTS_SECONDS` | HSTS lifetime. `0` disables it |
+| `CCLY_SECURE_HSTS_INCLUDE_SUBDOMAINS` | Include subdomains in HSTS |
+| `CCLY_SECURE_HSTS_PRELOAD` | Allow HSTS preload |
+| `CCLY_SECURE_PROXY_SSL_HEADER` | Proxy HTTPS header, for example `HTTP_X_FORWARDED_PROTO,https` |
+| `CCLY_CSRF_TRUSTED_ORIGINS` | Comma-separated origins, including the scheme |
+| `CCLY_USE_X_FORWARDED_HOST` | Trust `X-Forwarded-Host` from a proxy |
 | `CCLY_EMAIL_BACKEND` | Email backend, default console |
 | `CCLY_DEFAULT_FROM_EMAIL` | From address for password reset |
+| `CCLY_EMAIL_HOST` | SMTP host, used when the backend is SMTP |
+| `CCLY_EMAIL_PORT` | SMTP port, default `587` |
+| `CCLY_EMAIL_HOST_USER` | SMTP username |
+| `CCLY_EMAIL_HOST_PASSWORD` | SMTP password |
+| `CCLY_EMAIL_USE_TLS` | STARTTLS, default `true` |
+| `CCLY_EMAIL_USE_SSL` | Implicit TLS. Do not enable this and TLS together |
 | `CCLY_AXES_FAILURE_LIMIT` | Failed logins before lockout |
 | `CCLY_AXES_COOLOFF_HOURS` | Lockout cooloff in hours |
 | `CCLY_RATELIMIT_ENABLE` | Rate limiting, default `true` |
@@ -74,9 +99,13 @@ ccly shell
 | `CCLY_RATELIMIT_KEY` | Who is counted: `user_or_ip` (default), `ip`, or `user` |
 | `CCLY_RATELIMIT_FAIL_OPEN` | Allow requests when the cache is down, default `false` |
 
+`ccly init` invents a new session cookie, CSRF cookie, language cookie, and cache prefix for each site. Two sites can then be served from the same domain without sharing logins or cache entries. Leave `CCLY_COOKIE_DOMAIN` empty so those cookies stay on that host.
+
+For a public HTTPS server, set `CCLY_DEBUG=false`, `CCLY_COOKIE_SECURE=true`, `CCLY_SECURE_SSL_REDIRECT=true`, and `CCLY_SECURE_HSTS_SECONDS=31536000`. Behind a reverse proxy, set `CCLY_SECURE_PROXY_SSL_HEADER=HTTP_X_FORWARDED_PROTO,https` and list the public origins in `CCLY_CSRF_TRUSTED_ORIGINS` (for example `https://bulletin.example.com`). To send mail, set `CCLY_EMAIL_BACKEND` to `django.core.mail.backends.smtp.EmailBackend` and fill in `CCLY_EMAIL_HOST`. Set `CCLY_CONN_MAX_AGE` above `0` when the database is not SQLite.
+
 `CCLY_SITE_NAME` is optional. When it is unset, the admin title is the PyPI name of each app in `CCLY_APPS`.
 
-`CCLY_RATELIMIT_IP_META_KEY` is optional. Set it to the request header your proxy uses, such as `HTTP_X_FORWARDED_FOR`, when `REMOTE_ADDR` is not the client. The default cache counts limits in each process; use a shared cache such as Redis or Memcached when you run more than one process. Static files are not counted. A request past the rate gets HTTP 403.
+`CCLY_RATELIMIT_IP_META_KEY` is optional. Set it to the request header your proxy uses, such as `HTTP_X_FORWARDED_FOR`, when `REMOTE_ADDR` is not the client. Static files are not counted. A request past the rate gets HTTP 403. The default cache is per process; point Django at a shared cache when you run more than one process. The cache prefix above keeps two sites apart when they share that cache.
 
 Each app that provides a `urls` module is mounted at `/<app_name>/`.
 
