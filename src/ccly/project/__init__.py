@@ -1,0 +1,1 @@
+"""Embedded Cicely Django project."""

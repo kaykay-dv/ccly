@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "__APP_NAME__"
+version = "0.1.0"
+description = "Django app __APP_NAME__."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "Django>=5.2",
+    "djangorestframework>=3.16",
+]
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src/__APP_NAME__"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/__APP_NAME__" = "__APP_NAME__"

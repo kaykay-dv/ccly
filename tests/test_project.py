@@ -1,0 +1,128 @@
+import importlib
+import importlib.metadata
+import os
+import sys
+from pathlib import Path
+
+import pytest
+
+from ccly.cli import run
+
+APP_NAME = "cclysampleapp"
+
+
+def _install_app(app_dir: Path, app_name: str) -> None:
+    """Expose the generated package and its distribution metadata on sys.path.
+
+    This is the same information ``pip install -e`` publishes: an importable
+    package plus a dist-info directory whose Name is the PyPI name.
+    """
+    src = app_dir / "src"
+    dist_info = src / f"{app_name}-0.1.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\n" f"Name: {app_name}\n" "Version: 0.1.0\n",
+        encoding="utf-8",
+    )
+    (dist_info / "top_level.txt").write_text(f"{app_name}\n", encoding="utf-8")
+    sys.path.insert(0, str(src))
+    importlib.invalidate_caches()
+
+
+@pytest.fixture(scope="module")
+def site(tmp_path_factory):
+    work = tmp_path_factory.mktemp("ccly-site")
+    app_parent = work / "package"
+    app_parent.mkdir()
+    site_dir = work / "site"
+    site_dir.mkdir()
+    previous = Path.cwd()
+    previous_env = {
+        key: os.environ[key]
+        for key in os.environ
+        if key.startswith("CCLY_") or key == "DJANGO_SETTINGS_MODULE"
+    }
+    for key in previous_env:
+        del os.environ[key]
+    try:
+        os.chdir(app_parent)
+        assert run(["create", APP_NAME]) == 0
+        _install_app(app_parent / APP_NAME, APP_NAME)
+        os.chdir(site_dir)
+        assert run(["init", APP_NAME]) == 0
+        os.environ["DJANGO_SETTINGS_MODULE"] = "ccly.project.settings"
+        import django
+        from django.contrib.auth import get_user_model
+        from django.core.management import call_command
+        from django.test import Client
+
+        django.setup()
+        call_command("migrate", verbosity=0)
+        call_command("check")
+        user = get_user_model().objects.create_superuser(
+            "admin",
+            "admin@example.com",
+            "s3cret-pass",
+        )
+        anonymous = Client()
+        anonymous.defaults["HTTP_HOST"] = "localhost"
+        staff = Client()
+        staff.defaults["HTTP_HOST"] = "localhost"
+        staff.force_login(user)
+        yield {"app_name": APP_NAME, "anonymous": anonymous, "staff": staff}
+    finally:
+        os.chdir(previous)
+        for key in list(os.environ):
+            if key.startswith("CCLY_") or key == "DJANGO_SETTINGS_MODULE":
+                del os.environ[key]
+        os.environ.update(previous_env)
+
+
+def test_installed_distribution_name_matches_the_package(site):
+    mapping = importlib.metadata.packages_distributions()
+    assert site["app_name"] in mapping.get(site["app_name"], [])
+    from django.conf import settings
+    from django.contrib import admin
+
+    assert settings.CCLY_SITE_TITLE == site["app_name"]
+    assert admin.site.site_header == site["app_name"]
+    assert admin.site.site_title == site["app_name"]
+
+
+def test_login_uses_the_package_name_and_password_reset(site):
+    response = site["anonymous"].get("/m/login/")
+    body = response.content.decode()
+    assert response.status_code == 200
+    assert site["app_name"] in body
+    assert "/m/password_reset/" in body
+    assert "Forgotten your login credentials?" in body
+
+
+def test_admin_header_links_to_openapi(site):
+    response = site["staff"].get("/m/")
+    body = response.content.decode()
+    assert response.status_code == 200
+    assert site["app_name"] in body
+    assert 'class="ccly-openapi"' in body
+    assert 'href="/api/docs/"' in body
+    assert ">OpenAPI<" in body
+
+    password_change = site["staff"].get("/m/password_change/")
+    assert password_change.status_code == 200
+    assert ">OpenAPI<" in password_change.content.decode()
+
+
+def test_healthcheck_returns_ok_json(site):
+    response = site["anonymous"].get(f"/{site['app_name']}/health/")
+    assert response.status_code == 200
+    assert response["Content-Type"].startswith("application/json")
+    assert response.json() == "OK"
+
+
+def test_schema_and_docs(site):
+    schema = site["anonymous"].get("/api/schema/")
+    assert schema.status_code == 200
+    assert f"/{site['app_name']}/health/" in schema.content.decode()
+    docs = site["anonymous"].get("/api/docs/")
+    assert docs.status_code == 200
+    assert site["app_name"] in docs.content.decode()

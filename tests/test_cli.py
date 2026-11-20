@@ -1,0 +1,78 @@
+from pathlib import Path
+
+from ccly.cli import run
+from ccly.scaffold import config_class_name
+
+
+def test_help():
+    assert run([]) == 0
+    assert run(["--help"]) == 0
+
+
+def test_create_writes_a_package(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert run(["create", "my_app"]) == 0
+    package = tmp_path / "my_app"
+    pyproject = (package / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'name = "my_app"' in pyproject
+    assert 'only-include = ["src/my_app"]' in pyproject
+    apps = (package / "src" / "my_app" / "apps.py").read_text(encoding="utf-8")
+    assert f"class {config_class_name('my_app')}(" in apps
+    assert 'name = "my_app"' in apps
+    views = (package / "src" / "my_app" / "views.py").read_text(encoding="utf-8")
+    assert "class HealthView" in views
+    assert 'return Response("OK")' in views
+    urls = (package / "src" / "my_app" / "urls.py").read_text(encoding="utf-8")
+    assert 'path("health/"' in urls
+    assert (package / "src" / "my_app" / "migrations" / "__init__.py").is_file()
+
+
+def test_create_rejects_a_bad_name(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    assert run(["create", "not-an-app"]) == 2
+    assert "not a valid Python identifier" in capsys.readouterr().err
+    assert run(["create", "class"]) == 2
+
+
+def test_create_refuses_to_overwrite(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert run(["create", "bulletin"]) == 0
+    assert run(["create", "bulletin"]) == 1
+    assert Path("bulletin").is_dir()
+
+
+def test_init_writes_env_without_a_fixed_site_name(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    assert run(["ini", "bulletin", "kbdr"]) == 0
+    env = Path(".env").read_text(encoding="utf-8")
+    assert "CCLY_APPS=bulletin,kbdr" in env
+    assert "CCLY_DATABASE_URL=sqlite:///db.sqlite3" in env
+    assert "CCLY_SECRET_KEY=" in env
+    assert "CCLY_SITE_NAME" not in env
+    captured = capsys.readouterr()
+    assert "pip install -e /path/to/bulletin" in captured.err
+    assert "pip install -e /path/to/kbdr" in captured.err
+
+
+def test_init_does_not_replace_env_without_force(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert run(["init", "bulletin"]) == 0
+    original = Path(".env").read_text(encoding="utf-8")
+    assert run(["init", "kbdr"]) == 1
+    assert Path(".env").read_text(encoding="utf-8") == original
+    assert run(["init", "kbdr", "--force"]) == 0
+    replaced = Path(".env").read_text(encoding="utf-8")
+    assert replaced != original
+    assert "CCLY_APPS=kbdr" in replaced
+
+
+def test_init_rejects_a_bad_name(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert run(["init", "not-an-app"]) == 2
+    assert not Path(".env").exists()
+
+
+def test_django_command_requires_env(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    assert run(["check"]) == 1
+    assert "ccly init" in capsys.readouterr().err
