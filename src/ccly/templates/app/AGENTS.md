@@ -4,6 +4,14 @@ This repository is a Django app packaged for PyPI. It is loaded by [ccly](https:
 
 ccly serves the admin at `/m/`, the OpenAPI document at `/api/docs/`, and this app at `/__APP_NAME__/`.
 
+## Documentation
+
+Sphinx documentation lives in `docs/` and uses the Read the Docs theme. Whenever a change is made, the documentation must be updated as well. Rebuild it from this directory:
+
+```bash
+sphinx-build -b html docs docs/_build/html
+```
+
 ## Run it
 
 From this directory:

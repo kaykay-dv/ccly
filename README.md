@@ -26,7 +26,7 @@ cd bulletin
 pip install -e .
 ```
 
-That writes a src-layout package, including `AGENTS.md`. It includes `GET /bulletin/health/`, which returns the JSON string `"OK"`.
+That writes a src-layout package, including `AGENTS.md` and a Sphinx project that uses the Read the Docs theme. The HTML is built into `docs/_build/html/`. It includes `GET /bulletin/health/`, which returns the JSON string `"OK"`.
 
 ### Extras
 

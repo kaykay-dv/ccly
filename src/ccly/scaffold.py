@@ -53,12 +53,27 @@ def create_app(
     }
     _copy_tree(template_root(), target, replacements)
     _apply_extras(target, app_name, chosen)
+    if _build_docs(target) != 0:
+        return 1
     print(f"Created {target}")
     if chosen:
         print("Extras: " + ", ".join(extra.name for extra in chosen))
     print("Install it, then point a site at it:")
     print(f"  pip install -e {target}")
     print(f"  ccly init {app_name}")
+    return 0
+
+
+def _build_docs(destination: Path) -> int:
+    from sphinx.cmd.build import build_main
+
+    source = destination / "docs"
+    output = source / "_build" / "html"
+    status = build_main(["-q", "-b", "html", str(source), str(output)])
+    if status != 0:
+        print("Could not build the Sphinx documentation.", file=sys.stderr)
+        return status
+    print(f"Documentation: {output / 'index.html'}")
     return 0
 
 

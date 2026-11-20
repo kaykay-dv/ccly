@@ -29,6 +29,14 @@ def test_create_writes_a_package(tmp_path, monkeypatch):
     assert 'path("health/"' in urls
     assert (package / "src" / "my_app" / "migrations" / "__init__.py").is_file()
     contributed = (package / "src" / "my_app" / "ccly_settings.py").read_text(encoding="utf-8")
+    assert "Whenever a change is made, the documentation must be updated" in (
+        package / "AGENTS.md"
+    ).read_text(encoding="utf-8")
+    conf = (package / "docs" / "conf.py").read_text(encoding="utf-8")
+    assert 'html_theme = "sphinx_rtd_theme"' in conf
+    built = (package / "docs" / "_build" / "html" / "index.html").read_text(encoding="utf-8")
+    assert "my_app" in built
+    assert "sphinx_rtd_theme" in built
     assert "Uppercase names" in contributed
     assert 'CCLY_LOGO = "img/alaska.png"' in contributed
     assert 'env("CCLY_API_KEY", required=True)' in contributed

@@ -18,3 +18,9 @@ only-include = ["src/__APP_NAME__"]
 
 [tool.hatch.build.targets.wheel.sources]
 "src/__APP_NAME__" = "__APP_NAME__"
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=7",
+    "sphinx-rtd-theme>=3",
+]

@@ -1,5 +1,10 @@
 # Changes
 
+## Documentation
+
+- `ccly create` adds a Sphinx project with the Read the Docs theme and builds the HTML docs.
+- Generated `AGENTS.md` requires the documentation to be updated whenever the app changes.
+
 ## Extras
 
 - `ccly create --extras` accepts plugin names. `oauth_client` adds mozilla-django-oidc to the app and writes its settings into `.env` on `ccly init`.
