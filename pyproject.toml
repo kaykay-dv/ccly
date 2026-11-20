@@ -9,6 +9,9 @@ description = "Cicely: a portable Django project for apps you publish yourself."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+authors = [
+    { name = "Karl" },
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: Django",
@@ -29,6 +32,9 @@ dependencies = [
     "python-dotenv>=1.0",
     "dj-database-url>=2.1",
 ]
+
+[project.urls]
+Author = "https://github.com/kaykay-dv/"
 
 [project.optional-dependencies]
 dev = [

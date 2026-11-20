@@ -3,6 +3,7 @@
 ## Packaging
 
 - Marked ccly as alpha in `pyproject.toml` and added Django and Python classifiers.
+- Added Karl (https://github.com/kaykay-dv/) as the package author.
 
 ## Site locale
 
