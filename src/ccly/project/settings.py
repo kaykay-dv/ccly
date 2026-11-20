@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 from ccly.branding import site_title
@@ -44,10 +46,30 @@ def _env_float(name: str, default: float) -> float:
     return float(raw)
 
 
+def _env_text(name: str, default: str) -> str:
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip()
+
+
+def _env_rate(name: str, default: str) -> str | None:
+    """A django-ratelimit rate (``60/m``), or None when the variable is empty."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    value = raw.strip()
+    if value == "":
+        return None
+    if re.fullmatch(r"\d+/\d*[smhd]", value) is None:
+        raise ImproperlyConfigured(
+            f"{name} must look like 60/m, or be empty to disable the limit."
+        )
+    return value
+
+
 _secret = os.environ.get("CCLY_SECRET_KEY", "").strip()
 if not _secret:
-    from django.core.exceptions import ImproperlyConfigured
-
     raise ImproperlyConfigured(
         "CCLY_SECRET_KEY is missing. Run ccly init <app_name> in this directory."
     )
@@ -80,6 +102,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "ccly.project.ratelimit.RatelimitMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "axes.middleware.AxesMiddleware",
@@ -151,5 +174,14 @@ SPECTACULAR_SETTINGS = {
 
 AXES_FAILURE_LIMIT = _env_int("CCLY_AXES_FAILURE_LIMIT", 5)
 AXES_COOLOFF_TIME = timedelta(hours=_env_float("CCLY_AXES_COOLOFF_HOURS", 1))
+
+# django-ratelimit. An empty CCLY_RATELIMIT_RATE means no limit.
+RATELIMIT_ENABLE = _env_bool("CCLY_RATELIMIT_ENABLE", True)
+RATELIMIT_FAIL_OPEN = _env_bool("CCLY_RATELIMIT_FAIL_OPEN", False)
+CCLY_RATELIMIT_RATE = _env_rate("CCLY_RATELIMIT_RATE", "60/m")
+CCLY_RATELIMIT_KEY = _env_text("CCLY_RATELIMIT_KEY", "user_or_ip")
+_ip_meta = os.environ.get("CCLY_RATELIMIT_IP_META_KEY", "").strip()
+if _ip_meta:
+    RATELIMIT_IP_META_KEY = _ip_meta
 
 contribute_settings(sys.modules[__name__], CCLY_APPS)

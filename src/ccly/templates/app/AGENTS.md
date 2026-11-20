@@ -53,4 +53,5 @@ INSTALLED_APPS = ["third.party.app"]
 - Prefer `get_user_model()` over importing `User` directly.
 - Validate external input in serializers or forms. Do not trust data from the external API described in `ccly_settings.py`.
 - Keep privileged behavior behind the existing authentication. The healthcheck stays public (`AllowAny`).
+- ccly rate-limits requests. The default is 60 a minute for each signed-in user, or for each IP. Change `CCLY_RATELIMIT_RATE`, `CCLY_RATELIMIT_KEY`, `CCLY_RATELIMIT_ENABLE`, and `CCLY_RATELIMIT_FAIL_OPEN` in the site's `.env`.
 - Run `ccly check` after changing settings, URLs, or installed models.

@@ -55,6 +55,10 @@ def test_init_writes_env_without_a_fixed_site_name(tmp_path, monkeypatch, capsys
     assert "CCLY_DATABASE_URL=sqlite:///db.sqlite3" in env
     assert "CCLY_SECRET_KEY=" in env
     assert "CCLY_SITE_NAME" not in env
+    assert "CCLY_RATELIMIT_ENABLE=true" in env
+    assert "CCLY_RATELIMIT_RATE=60/m" in env
+    assert "CCLY_RATELIMIT_KEY=user_or_ip" in env
+    assert "CCLY_RATELIMIT_FAIL_OPEN=false" in env
     captured = capsys.readouterr()
     assert "pip install -e /path/to/bulletin" in captured.err
     assert "pip install -e /path/to/kbdr" in captured.err

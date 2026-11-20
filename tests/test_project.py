@@ -146,6 +146,30 @@ def test_admin_header_links_to_openapi(site):
     assert ">OpenAPI<" in password_change.content.decode()
 
 
+def test_ratelimit_uses_env_defaults_and_blocks_past_the_rate(site):
+    from django.conf import settings
+    from django.core.cache import cache
+    from django.test import override_settings
+
+    assert settings.RATELIMIT_ENABLE is True
+    assert settings.RATELIMIT_FAIL_OPEN is False
+    assert settings.CCLY_RATELIMIT_RATE == "60/m"
+    assert settings.CCLY_RATELIMIT_KEY == "user_or_ip"
+
+    health = f"/{site['app_name']}/health/"
+    cache.clear()
+    try:
+        with override_settings(CCLY_RATELIMIT_RATE="1/m"):
+            first = site["anonymous"].get(health)
+            second = site["anonymous"].get(health)
+            static = site["anonymous"].get("/static/img/alaska.png")
+        assert first.status_code == 200
+        assert second.status_code == 403
+        assert static.status_code != 403
+    finally:
+        cache.clear()
+
+
 def test_healthcheck_returns_ok_json(site):
     response = site["anonymous"].get(f"/{site['app_name']}/health/")
     assert response.status_code == 200

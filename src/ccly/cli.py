@@ -122,6 +122,10 @@ def _render_env(app_names: list[str]) -> str:
         "CCLY_DEFAULT_FROM_EMAIL=webmaster@localhost",
         "CCLY_AXES_FAILURE_LIMIT=5",
         "CCLY_AXES_COOLOFF_HOURS=1",
+        "CCLY_RATELIMIT_ENABLE=true",
+        "CCLY_RATELIMIT_RATE=60/m",
+        "CCLY_RATELIMIT_KEY=user_or_ip",
+        "CCLY_RATELIMIT_FAIL_OPEN=false",
         "",
     ]
     return "\n".join(lines)
