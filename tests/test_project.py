@@ -47,6 +47,13 @@ def site(tmp_path_factory):
     try:
         os.chdir(app_parent)
         assert run(["create", APP_NAME]) == 0
+        settings_module = (
+            app_parent / APP_NAME / "src" / APP_NAME / "ccly_settings.py"
+        )
+        settings_module.write_text(
+            'EXTERNAL_API_URL = "https://api.example.com"\n',
+            encoding="utf-8",
+        )
         _install_app(app_parent / APP_NAME, APP_NAME)
         os.chdir(site_dir)
         assert run(["init", APP_NAME]) == 0
@@ -76,6 +83,12 @@ def site(tmp_path_factory):
             if key.startswith("CCLY_") or key == "DJANGO_SETTINGS_MODULE":
                 del os.environ[key]
         os.environ.update(previous_env)
+
+
+def test_app_settings_are_added_to_the_project(site):
+    from django.conf import settings
+
+    assert settings.EXTERNAL_API_URL == "https://api.example.com"
 
 
 def test_installed_distribution_name_matches_the_package(site):

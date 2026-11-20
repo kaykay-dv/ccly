@@ -25,6 +25,8 @@ def test_create_writes_a_package(tmp_path, monkeypatch):
     urls = (package / "src" / "my_app" / "urls.py").read_text(encoding="utf-8")
     assert 'path("health/"' in urls
     assert (package / "src" / "my_app" / "migrations" / "__init__.py").is_file()
+    contributed = (package / "src" / "my_app" / "ccly_settings.py").read_text(encoding="utf-8")
+    assert "Uppercase names" in contributed
 
 
 def test_create_rejects_a_bad_name(tmp_path, monkeypatch, capsys):

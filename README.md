@@ -71,3 +71,11 @@ ccly shell
 `CCLY_SITE_NAME` is optional. When it is unset, the admin title is the PyPI name of each app in `CCLY_APPS`.
 
 Each app that provides a `urls` module is mounted at `/<app_name>/`.
+
+An app can also provide `ccly_settings.py`. Uppercase names in that module are added to the Django settings and are the same for every deployment, for example an external API URL:
+
+```python
+EXTERNAL_API_URL = "https://api.example.com"
+```
+
+A name that ccly, or an earlier app, already defines is rejected.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import dj_database_url
 from dotenv import load_dotenv
 
 from ccly.branding import site_title
+from ccly.project.app_settings import contribute_settings
 
 load_dotenv(Path.cwd() / ".env")
 
@@ -147,3 +149,5 @@ SPECTACULAR_SETTINGS = {
 
 AXES_FAILURE_LIMIT = _env_int("CCLY_AXES_FAILURE_LIMIT", 5)
 AXES_COOLOFF_TIME = timedelta(hours=_env_float("CCLY_AXES_COOLOFF_HOURS", 1))
+
+contribute_settings(sys.modules[__name__], CCLY_APPS)
