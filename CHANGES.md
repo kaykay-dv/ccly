@@ -1,11 +1,16 @@
 # Changes
 
+## Packaging
+
+- Marked ccly as alpha in `pyproject.toml` and added Django and Python classifiers.
+
 ## Site locale
 
 - `ccly init` sets `CCLY_TIME_ZONE` and `CCLY_LANGUAGE_CODE` from the machine when it can read them, and otherwise uses `UTC` and `en-us`.
 
 ## Documentation
 
+- Noted in `README.md` that ccly is particularly targeted at Django-based microservices.
 - Noted in `README.md` that ccly is a nod to "Cicely" in Northern Exposure.
 - Added `AGENTS.md` with a short description of ccly and a requirement to record file changes in this file.
 - Added a Default column to the configuration table in `README.md`.

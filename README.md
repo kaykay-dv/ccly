@@ -1,6 +1,6 @@
 # ccly
 
-ccly (a nod to "Cicely" in [Northern Exposure](https://en.wikipedia.org/wiki/Northern_Exposure)) is a Django project you carry with you. The project lives in this package. A site is only a directory with a `.env` file. The apps you build are separate, publishable packages.
+ccly (a nod to "Cicely" in [Northern Exposure](https://en.wikipedia.org/wiki/Northern_Exposure)) is a Django project you carry with you. It is particularly targeted at those who want to write Django-based microservices. The project lives in this package. A site is only a directory with a `.env` file. The apps you build are separate, publishable packages.
 
 Admin is served at `/m/`. Django REST framework and an OpenAPI document (drf-spectacular) are included. django-axes watches login attempts, and django-ratelimit caps traffic at 60 requests a minute for each signed-in user, or for each IP when nobody is signed in.
 
