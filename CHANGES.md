@@ -16,6 +16,7 @@
 
 ## Documentation
 
+- Split `README.md` into shorter sections for install, the site, configuration, and apps.
 - Noted in `README.md` that ccly is opinionated and ships with pre-selected third-party apps.
 - Noted in `README.md` that ccly is particularly targeted at Django-based microservices.
 - Noted in `README.md` that ccly is a nod to "Cicely" in Northern Exposure.
