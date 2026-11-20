@@ -20,7 +20,7 @@ cd bulletin
 pip install -e .
 ```
 
-That writes a src-layout package. It includes `GET /bulletin/health/`, which returns the JSON string `"OK"`.
+That writes a src-layout package, including `AGENTS.md`. It includes `GET /bulletin/health/`, which returns the JSON string `"OK"`.
 
 ## Start a site
 
@@ -78,4 +78,8 @@ An app can also provide `ccly_settings.py`. Uppercase names in that module are a
 EXTERNAL_API_URL = "https://api.example.com"
 ```
 
-A name that ccly, or an earlier app, already defines is rejected.
+A later app replaces a value that ccly, or an earlier app, already set. `INSTALLED_APPS` is extended instead: names from the app are appended, and names already present stay where they are.
+
+```python
+INSTALLED_APPS = ["third.party.app"]
+```

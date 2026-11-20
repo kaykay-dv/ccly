@@ -13,6 +13,16 @@ def _forget(*names: str) -> None:
             del sys.modules[loaded]
 
 
+@pytest.fixture(autouse=True)
+def _drop_fake_apps():
+    # Later tests ask importlib whether these names are installed. A leftover
+    # module still counts as found after its temporary path is gone.
+    names = ("bulletin", "kbdr")
+    _forget(*names)
+    yield
+    _forget(*names)
+
+
 def _package(tmp_path, name, source):
     package = tmp_path / name
     package.mkdir()
@@ -42,23 +52,49 @@ def test_missing_module_is_skipped(tmp_path, monkeypatch):
     assert not hasattr(target, "EXTERNAL_API_URL")
 
 
-def test_existing_name_is_rejected(tmp_path, monkeypatch):
+def test_existing_name_is_overridden(tmp_path, monkeypatch):
     _forget("bulletin")
-    _package(tmp_path, "bulletin", 'SECRET_KEY = "nope"\n')
+    _package(tmp_path, "bulletin", 'EXTERNAL_API_URL = "https://api.example.com"\n')
     monkeypatch.syspath_prepend(str(tmp_path))
     target = ModuleType("target")
-    target.SECRET_KEY = "kept"
-    with pytest.raises(ImproperlyConfigured, match="SECRET_KEY"):
-        contribute_settings(target, ["bulletin"])
-    assert target.SECRET_KEY == "kept"
+    target.EXTERNAL_API_URL = "https://old.example"
+    contribute_settings(target, ["bulletin"])
+    assert target.EXTERNAL_API_URL == "https://api.example.com"
 
 
-def test_second_app_cannot_redefine_a_name(tmp_path, monkeypatch):
+def test_later_app_overrides_an_earlier_one(tmp_path, monkeypatch):
     _forget("bulletin", "kbdr")
     _package(tmp_path, "bulletin", 'EXTERNAL_API_URL = "https://one.example"\n')
     _package(tmp_path, "kbdr", 'EXTERNAL_API_URL = "https://two.example"\n')
     monkeypatch.syspath_prepend(str(tmp_path))
     target = ModuleType("target")
-    with pytest.raises(ImproperlyConfigured, match="kbdr.ccly_settings.EXTERNAL_API_URL"):
-        contribute_settings(target, ["bulletin", "kbdr"])
-    assert target.EXTERNAL_API_URL == "https://one.example"
+    contribute_settings(target, ["bulletin", "kbdr"])
+    assert target.EXTERNAL_API_URL == "https://two.example"
+
+
+def test_installed_apps_are_appended(tmp_path, monkeypatch):
+    _forget("bulletin", "kbdr")
+    _package(tmp_path, "bulletin", 'INSTALLED_APPS = ["news", "django.contrib.gis"]\n')
+    _package(tmp_path, "kbdr", 'INSTALLED_APPS = ["news", "archive"]\n')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    target = ModuleType("target")
+    target.INSTALLED_APPS = ["django.contrib.auth", "bulletin"]
+    contribute_settings(target, ["bulletin", "kbdr"])
+    assert target.INSTALLED_APPS == [
+        "django.contrib.auth",
+        "bulletin",
+        "news",
+        "django.contrib.gis",
+        "archive",
+    ]
+
+
+def test_installed_apps_must_be_a_list(tmp_path, monkeypatch):
+    _forget("bulletin")
+    _package(tmp_path, "bulletin", "INSTALLED_APPS = 3\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    target = ModuleType("target")
+    target.INSTALLED_APPS = ["django.contrib.auth"]
+    with pytest.raises(ImproperlyConfigured, match="INSTALLED_APPS"):
+        contribute_settings(target, ["bulletin"])
+    assert target.INSTALLED_APPS == ["django.contrib.auth"]

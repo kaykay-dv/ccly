@@ -17,10 +17,10 @@ def contribute_settings(target: ModuleType, app_names: list[str]) -> None:
     """Copy uppercase names from each app's ``ccly_settings`` module onto ``target``.
 
     These values belong to the app package, so they are the same for every
-    deployment. A name ccly already defined, or that an earlier app defined,
-    is left unchanged and reported as a conflict.
+    deployment. A later app replaces a value defined by ccly or by an earlier
+    app. ``INSTALLED_APPS`` is the exception: contributed app names are
+    appended, and names already present are left in place.
     """
-    defined = {name for name in vars(target) if is_setting_name(name)}
     importlib.invalidate_caches()
     for app_name in app_names:
         module_name = f"{app_name}.ccly_settings"
@@ -30,9 +30,23 @@ def contribute_settings(target: ModuleType, app_names: list[str]) -> None:
         for name, value in vars(module).items():
             if not is_setting_name(name):
                 continue
-            if name in defined:
-                raise ImproperlyConfigured(
-                    f"{module_name}.{name} conflicts with a setting that is already defined."
-                )
-            setattr(target, name, value)
-            defined.add(name)
+            if name == "INSTALLED_APPS":
+                setattr(target, name, _extend_installed_apps(getattr(target, name, ()), value, module_name))
+            else:
+                setattr(target, name, value)
+
+
+def _extend_installed_apps(existing, contributed, module_name: str) -> list[str]:
+    if isinstance(contributed, str):
+        contributed = [contributed]
+    elif not isinstance(contributed, (list, tuple)):
+        raise ImproperlyConfigured(
+            f"{module_name}.INSTALLED_APPS must be a list of app names."
+        )
+    merged = list(existing)
+    present = set(merged)
+    for name in contributed:
+        if name not in present:
+            merged.append(name)
+            present.add(name)
+    return merged
