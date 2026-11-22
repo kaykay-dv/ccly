@@ -2,9 +2,11 @@
 
 ![Alaska](src/ccly/templates/app/static/img/alaska.png)
 
-ccly (a nod to "Cicely" in [Northern Exposure](https://en.wikipedia.org/wiki/Northern_Exposure)) is a Django project you carry with you. It is particularly targeted at those who want to write Django-based microservices. ccly is opinionated in that it comes with a variety of pre-selected third-party apps.
+ccly (a nod to "Cicely" in [Northern Exposure](https://en.wikipedia.org/wiki/Northern_Exposure)) runs Django services from one shared project. This package is that project. The service you write is a separate, publishable app, and a running site is a directory with a `.env` file that names the apps to load.
 
-The project lives in this package. A site is only a directory with a `.env` file. The apps you build are separate, publishable packages.
+`ccly create` scaffolds the app. `ccly init` writes the site's `.env`. After that, `ccly` is the Django command: `ccly migrate`, `ccly runserver`, and any other management command. Each app is served at `/<app>/`, the admin at `/m/`, and the OpenAPI document at `/api/docs/`.
+
+It is aimed at people building Django-based microservices. The stack is already chosen, and the settings that usually live in `settings.py` come from `.env`.
 
 ## Included
 
@@ -188,7 +190,13 @@ CCLY_API_KEY = env("CCLY_API_KEY", required=True)
 
 ## Extras
 
-`--extras` takes one or more optional features. Each feature is a plugin.
+`--extras` takes one or more optional features. Each feature is a plugin. Several can be selected together:
+
+```bash
+ccly create bulletin --extras oauth_client oauth_provider
+```
+
+### OAuth client
 
 `oauth_client` adds [mozilla-django-oidc](https://github.com/mozilla/mozilla-django-oidc):
 
@@ -197,6 +205,8 @@ ccly create bulletin --extras oauth_client
 ```
 
 The app's `ccly_settings.py` wires the OpenID Connect client. After the app is installed, `ccly init` writes the provider's client id, secret, and endpoint URLs into `.env`. The callback URL is `http://127.0.0.1:8000/oidc/callback/`.
+
+### Identity provider
 
 `oauth_provider` adds [django-oauth-toolkit](https://django-oauth-toolkit.readthedocs.io/en/latest/) so the site can issue tokens:
 
@@ -229,11 +239,5 @@ class MyView(APIView):
     authentication_classes = [OAuth2Authentication]
     permission_classes = [TokenHasScope]
     required_scopes = ["read"]
-```
-
-Several extras can be selected together:
-
-```bash
-ccly create bulletin --extras oauth_client oauth_provider
 ```
 

@@ -2,6 +2,8 @@
 
 ## Documentation
 
+- Rewrote the `README.md` introduction so it states what ccly does: one shared Django project, publishable apps, and a site that is only a `.env` file.
+- Split the extras documentation into "OAuth client" and "Identity provider".
 - Moved the OAuth extras section to the bottom of `README.md`.
 - Show the Alaska logo at the top of `README.md`.
 - `ccly create` adds a Sphinx project with the Read the Docs theme and builds the HTML docs.
