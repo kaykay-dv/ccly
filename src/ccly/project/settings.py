@@ -13,7 +13,7 @@ import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
-from ccly.branding import site_title
+from ccly.branding import header_parts, site_title
 from ccly.project.app_settings import contribute_settings
 
 load_dotenv(Path.cwd() / ".env")
@@ -106,7 +106,9 @@ SECRET_KEY = _secret
 DEBUG = _env_bool("CCLY_DEBUG", False)
 ALLOWED_HOSTS = _env_list("CCLY_ALLOWED_HOSTS", "localhost,127.0.0.1")
 CCLY_APPS = _env_list("CCLY_APPS", "")
-CCLY_SITE_TITLE = site_title(CCLY_APPS, os.environ.get("CCLY_SITE_NAME", ""))
+_site_name = os.environ.get("CCLY_SITE_NAME", "")
+CCLY_SITE_TITLE = site_title(CCLY_APPS, _site_name)
+CCLY_HEADER_PARTS = header_parts(CCLY_APPS, _site_name)
 # An app replaces this by setting CCLY_LOGO in its ccly_settings module.
 CCLY_LOGO = "img/alaska.png"
 

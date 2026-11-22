@@ -54,7 +54,7 @@ ccly runserver
 
 The admin is served at `/<app_name>/m/`. A site with more than one app has an admin under each name. Sign-in links use the first name in `CCLY_APPS`.
 
-The admin login heading, the browser title, and the admin header use the installed PyPI name of the apps in `CCLY_APPS`. Set `CCLY_SITE_NAME` to override that. `CCLY_SITE_NAME` is optional; when it is unset, the admin title is the PyPI name of each app in `CCLY_APPS`.
+The admin login heading, the browser title, and the admin header use the installed PyPI name of the apps in `CCLY_APPS`. Set `CCLY_SITE_NAME` to override that. `CCLY_SITE_NAME` is optional; when it is unset, the admin title is the PyPI name of each app in `CCLY_APPS`. The header shows each app's installed version in a small badge beside its name.
 
 After you sign in, the upper-right corner of the admin has an OpenAPI link. The login form links to password reset, and the reset message is printed to the console unless you point `CCLY_EMAIL_BACKEND` at a real mailer. The account needs an email address.
 

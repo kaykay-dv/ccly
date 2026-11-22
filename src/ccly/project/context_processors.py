@@ -16,6 +16,7 @@ def admin_brand(request):
         "site_header": admin.site.site_header,
         "site_title": admin.site.site_title,
         "CCLY_LOGO": getattr(settings, "CCLY_LOGO", ""),
+        "CCLY_HEADER_PARTS": getattr(settings, "CCLY_HEADER_PARTS", []),
         "CCLY_ADMIN_IDLE_SECONDS": getattr(settings, "CCLY_ADMIN_IDLE_SECONDS", 0),
         "CCLY_ADMIN_IDLE_URL": admin_idle_url(
             getattr(request, "path", ""),

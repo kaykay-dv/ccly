@@ -10,6 +10,7 @@
 
 ## Admin
 
+- The admin header shows each installed app's version in a badge beside its name. The version is read with the distribution name, and with the import name when the package map does not list the app.
 - The admin and its password reset are served at `/<app_name>/m/` instead of `/m/`.
 
 ## Documentation

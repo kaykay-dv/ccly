@@ -172,7 +172,10 @@ def test_admin_navbar_shows_the_logo_beside_the_project_name(site):
     start = body.index('id="site-name"')
     brand = body[start : body.index("</div>", start)]
     # The app name also appears in the admin URL, so check the visible label.
-    assert f'class="ccly-logo">{site["app_name"]}' in brand
+    logo = brand.index('class="ccly-logo"')
+    name = brand.index(f'class="ccly-brand-part">{site["app_name"]}')
+    version = brand.index('class="ccly-version">0.1.0')
+    assert logo < name < version
     assert 'src="/static/img/alaska.png"' in brand
 
 
