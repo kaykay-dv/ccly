@@ -15,7 +15,7 @@ class Extra:
 
     name = ""
 
-    def settings_block(self) -> str:
+    def settings_block(self, app_name: str = "") -> str:
         """Python appended to the app's ``ccly_settings.py``."""
         return ""
 
@@ -23,7 +23,7 @@ class Extra:
         """Requirements added to the app's ``pyproject.toml``."""
         return []
 
-    def env_lines(self) -> list[str]:
+    def env_lines(self, app_names: list[str] | None = None) -> list[str]:
         """Lines appended to the site ``.env`` when the app is initialized."""
         return []
 

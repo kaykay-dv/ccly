@@ -136,16 +136,21 @@ def test_site_uses_its_own_cookies_and_local_production_defaults(site):
     assert settings.CSRF_TRUSTED_ORIGINS == []
     assert settings.DATABASES["default"]["CONN_MAX_AGE"] == 0
 
-    response = site["anonymous"].get("/m/login/")
+    response = site["anonymous"].get(f"/{site['app_name']}/m/login/")
     assert settings.CSRF_COOKIE_NAME in response.cookies
 
 
 def test_login_uses_the_package_name_and_password_reset(site):
-    response = site["anonymous"].get("/m/login/")
+    from django.conf import settings
+
+    admin = f"/{site['app_name']}/m/"
+    assert settings.LOGIN_URL == f"{admin}login/"
+    assert site["anonymous"].get("/m/login/").status_code == 404
+    response = site["anonymous"].get(f"{admin}login/")
     body = response.content.decode()
     assert response.status_code == 200
     assert site["app_name"] in body
-    assert "/m/password_reset/" in body
+    assert f"{admin}password_reset/" in body
     assert "Forgotten your login credentials?" in body
 
 
@@ -158,7 +163,7 @@ def test_admin_navbar_shows_the_logo_beside_the_project_name(site):
     assert found is not None
     assert Path(found).read_bytes().startswith(b"\x89PNG")
 
-    response = site["staff"].get("/m/")
+    response = site["staff"].get(f"/{site['app_name']}/m/")
     body = response.content.decode()
     assert response.status_code == 200
     start = body.index('id="site-name"')
@@ -168,7 +173,7 @@ def test_admin_navbar_shows_the_logo_beside_the_project_name(site):
 
 
 def test_admin_header_links_to_openapi(site):
-    response = site["staff"].get("/m/")
+    response = site["staff"].get(f"/{site['app_name']}/m/")
     body = response.content.decode()
     assert response.status_code == 200
     assert site["app_name"] in body
@@ -176,7 +181,7 @@ def test_admin_header_links_to_openapi(site):
     assert 'href="/api/docs/"' in body
     assert ">OpenAPI<" in body
 
-    password_change = site["staff"].get("/m/password_change/")
+    password_change = site["staff"].get(f"/{site['app_name']}/m/password_change/")
     assert password_change.status_code == 200
     assert ">OpenAPI<" in password_change.content.decode()
 

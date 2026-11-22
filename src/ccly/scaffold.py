@@ -98,7 +98,11 @@ def _apply_extras(destination: Path, app_name: str, extras: list[Extra]) -> None
     if not extras:
         return
     settings_path = destination / "src" / app_name / "ccly_settings.py"
-    blocks = [extra.settings_block().rstrip() for extra in extras if extra.settings_block()]
+    blocks = [
+        extra.settings_block(app_name).rstrip()
+        for extra in extras
+        if extra.settings_block(app_name)
+    ]
     if blocks:
         current = settings_path.read_text(encoding="utf-8").rstrip()
         settings_path.write_text(current + "\n\n" + "\n\n".join(blocks) + "\n", encoding="utf-8")

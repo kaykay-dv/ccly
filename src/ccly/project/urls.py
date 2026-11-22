@@ -8,28 +8,61 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from ccly.extras import urlpatterns_for_apps
 
+def _without_names(patterns: list) -> list:
+    """Drop URL names so a second copy of the admin does not claim ``reverse()``."""
+    for pattern in patterns:
+        nested = getattr(pattern, "url_patterns", None)
+        if nested is not None:
+            _without_names(list(nested))
+        elif getattr(pattern, "name", None):
+            pattern.name = None
+    return patterns
+
+
+def _admin_urlpatterns(app_names: list[str]) -> list:
+    """Serve the admin at ``/<app_name>/m/`` for each installed app.
+
+    Django can register the ``admin`` URL namespace only once. The first app
+    owns that namespace, so ``reverse()`` points at its admin. Further apps
+    serve the same views at their own prefix.
+    """
+    patterns = []
+    for index, app_name in enumerate(app_names):
+        prefix = f"{app_name}/m/"
+        named = index == 0
+        patterns.extend(
+            [
+                path(
+                    prefix + "password_reset/",
+                    auth_views.PasswordResetView.as_view(),
+                    name="admin_password_reset" if named else None,
+                ),
+                path(
+                    prefix + "password_reset/done/",
+                    auth_views.PasswordResetDoneView.as_view(),
+                    name="password_reset_done" if named else None,
+                ),
+                path(
+                    prefix + "reset/<uidb64>/<token>/",
+                    auth_views.PasswordResetConfirmView.as_view(),
+                    name="password_reset_confirm" if named else None,
+                ),
+                path(
+                    prefix + "reset/done/",
+                    auth_views.PasswordResetCompleteView.as_view(),
+                    name="password_reset_complete" if named else None,
+                ),
+            ]
+        )
+        if named:
+            patterns.append(path(prefix, admin.site.urls))
+        else:
+            patterns.append(path(prefix, include(_without_names(admin.site.get_urls()))))
+    return patterns
+
+
 urlpatterns = [
-    path(
-        "m/password_reset/",
-        auth_views.PasswordResetView.as_view(),
-        name="admin_password_reset",
-    ),
-    path(
-        "m/password_reset/done/",
-        auth_views.PasswordResetDoneView.as_view(),
-        name="password_reset_done",
-    ),
-    path(
-        "m/reset/<uidb64>/<token>/",
-        auth_views.PasswordResetConfirmView.as_view(),
-        name="password_reset_confirm",
-    ),
-    path(
-        "m/reset/done/",
-        auth_views.PasswordResetCompleteView.as_view(),
-        name="password_reset_complete",
-    ),
-    path("m/", admin.site.urls),
+    *_admin_urlpatterns(settings.CCLY_APPS),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/docs/",

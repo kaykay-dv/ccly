@@ -78,7 +78,7 @@ def resolve_extras(names: list[str]) -> list[Extra]:
 def env_lines_for_apps(app_names: list[str]) -> list[str]:
     lines: list[str] = []
     for extra in REGISTRY.for_apps(app_names):
-        lines.extend(extra.env_lines())
+        lines.extend(extra.env_lines(app_names))
     return lines
 
 

@@ -2,39 +2,33 @@
 
 ![Alaska](src/ccly/templates/app/static/img/alaska.png)
 
-ccly (a nod to "Cicely" in [Northern Exposure](https://en.wikipedia.org/wiki/Northern_Exposure)) runs Django services from one shared project. This package is that project. The service you write is a separate, publishable app, and a running site is a directory with a `.env` file that names the apps to load.
+ccly (a nod to "Cicely" in [Northern Exposure](https://en.wikipedia.org/wiki/Northern_Exposure)) runs Django services from one shared project. This package is that project. The service you write is a separate, publishable app, and a running site is a directory with an environment file that names the apps to load.
 
-`ccly create` scaffolds the app. `ccly init` writes the site's `.env`. After that, `ccly` is the Django command: `ccly migrate`, `ccly runserver`, and any other management command. Each app is served at `/<app>/`, the admin at `/m/`, and the OpenAPI document at `/api/docs/`.
+Each app is served on its own URL path. Admin, the API documentation, and the other project pages stay with the shared project. Settings that usually live in the Django settings module come from that environment file.
 
-It is aimed at people building Django-based microservices. The stack is already chosen, and the settings that usually live in `settings.py` come from `.env`.
+It is aimed at people building Django-based microservices. The stack is already chosen.
 
-## Included
+## Supported features
 
-Admin is served at `/m/`. Django REST framework and an OpenAPI document (drf-spectacular) are included. django-axes watches login attempts, and django-ratelimit caps traffic at 60 requests a minute for each signed-in user, or for each IP when nobody is signed in.
+- Admin at `/<app_name>/m/`, with password reset
+- Django REST framework and an OpenAPI document (drf-spectacular)
+- Login lockout after repeated failed attempts (django-axes)
+- Rate limiting, 60 requests a minute by default (django-ratelimit)
+- Separate cookie and cache names, so two sites can share a domain
+- Optional OpenID Connect client and OAuth 2 identity provider
 
-## Install
+## Quick start
 
-ccly is not on PyPI. Install it from GitHub with git:
+ccly is not on PyPI. Install it from GitHub with git. Python 3.11 or newer.
 
 ```bash
 pip install git+https://github.com/kaykay-dv/ccly.git
-```
-
-Python 3.11 or newer.
-
-## Create an app
-
-```bash
 ccly create bulletin
 cd bulletin
 pip install -e .
 ```
 
-That writes a src-layout package, including `AGENTS.md` and a Sphinx project that uses the Read the Docs theme. The HTML is built into `docs/_build/html/`. It includes `GET /bulletin/health/`, which returns the JSON string `"OK"`.
-
-## Start a site
-
-From any other directory:
+From any other directory, point a site at that app and start it:
 
 ```bash
 ccly init bulletin
@@ -45,14 +39,20 @@ ccly runserver
 
 `ccly ini` is an alias of `ccly init`. Pass `--force` to replace an existing `.env`.
 
-### Addresses
-
-- Admin: http://127.0.0.1:8000/m/
+- Admin: http://127.0.0.1:8000/bulletin/m/
 - OpenAPI docs: http://127.0.0.1:8000/api/docs/
 - Schema: http://127.0.0.1:8000/api/schema/
 - Health: http://127.0.0.1:8000/bulletin/health/
 
+## Create an app
+
+`ccly create` writes a src-layout package, including `AGENTS.md` and a Sphinx project that uses the Read the Docs theme. The HTML is built into `docs/_build/html/`. The app includes `GET /bulletin/health/`, which returns the JSON string `"OK"`.
+
+## Start a site
+
 ### Admin
+
+The admin is served at `/<app_name>/m/`. A site with more than one app has an admin under each name. Sign-in links use the first name in `CCLY_APPS`.
 
 The admin login heading, the browser title, and the admin header use the installed PyPI name of the apps in `CCLY_APPS`. Set `CCLY_SITE_NAME` to override that. `CCLY_SITE_NAME` is optional; when it is unset, the admin title is the PyPI name of each app in `CCLY_APPS`.
 
@@ -214,7 +214,7 @@ The app's `ccly_settings.py` wires the OpenID Connect client. After the app is i
 ccly create bulletin --extras oauth_provider
 ```
 
-`ccly migrate` creates the provider tables. Register an application in the admin, then use the endpoints under `/o/`: `/o/authorize/`, `/o/token/`, `/o/revoke_token/`, and `/o/introspect/`. A browser that is not signed in is sent to `/m/login/`.
+`ccly migrate` creates the provider tables. Register an application in the admin, then use the endpoints under `/o/`: `/o/authorize/`, `/o/token/`, `/o/revoke_token/`, and `/o/introspect/`. A browser that is not signed in is sent to `/<app_name>/m/login/`.
 
 | Variable | Purpose | Default |
 | --- | --- | --- |

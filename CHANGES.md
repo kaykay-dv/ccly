@@ -1,7 +1,13 @@
 # Changes
 
+## Admin
+
+- The admin and its password reset are served at `/<app_name>/m/` instead of `/m/`.
+
 ## Documentation
 
+- Removed the command walkthrough from the `README.md` introduction and added a Quick start for the first steps.
+- Replaced the `README.md` "Included" paragraph with a short list of supported features.
 - Rewrote the `README.md` introduction so it states what ccly does: one shared Django project, publishable apps, and a site that is only a `.env` file.
 - Split the extras documentation into "OAuth client" and "Identity provider".
 - Moved the OAuth extras section to the bottom of `README.md`.

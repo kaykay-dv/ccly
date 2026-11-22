@@ -2,7 +2,7 @@
 
 This repository is a Django app packaged for PyPI. It is loaded by [ccly](https://github.com/kaykay-dv/ccly), which owns the Django project. Do not add a project, a `manage.py`, or a second settings module for the site.
 
-ccly serves the admin at `/m/`, the OpenAPI document at `/api/docs/`, and this app at `/__APP_NAME__/`.
+ccly serves the admin at `/__APP_NAME__/m/`, the OpenAPI document at `/api/docs/`, and this app at `/__APP_NAME__/`.
 
 ## Documentation
 

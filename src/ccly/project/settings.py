@@ -176,7 +176,8 @@ USE_TZ = True
 STATIC_URL = _env_text("CCLY_STATIC_URL", "static/")
 STATIC_ROOT = Path.cwd() / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-LOGIN_URL = "/m/login/"
+# The admin lives under each installed app. Login links use the first app.
+LOGIN_URL = f"/{CCLY_APPS[0]}/m/login/" if CCLY_APPS else "/accounts/login/"
 
 # One token per site. Cookie names and the cache prefix keep two ccly
 # processes on the same domain from reading each other's sessions.

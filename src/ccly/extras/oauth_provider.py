@@ -66,13 +66,13 @@ class OAuthProvider(Extra):
 
     name = "oauth_provider"
 
-    def settings_block(self) -> str:
+    def settings_block(self, app_name: str = "") -> str:
         return _SETTINGS.strip() + "\n"
 
     def dependencies(self) -> list[str]:
         return ["django-oauth-toolkit>=3.0,<4"]
 
-    def env_lines(self) -> list[str]:
+    def env_lines(self, app_names: list[str] | None = None) -> list[str]:
         return [
             "",
             "# OAuth 2 provider (django-oauth-toolkit). Endpoints are under /o/.",

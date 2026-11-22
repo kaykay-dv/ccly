@@ -60,6 +60,7 @@ def test_create_oauth_client_adapts_the_app(tmp_path, monkeypatch):
     assert "from ccly.env import env" in settings
     assert 'OIDC_RP_CLIENT_ID = env("OIDC_RP_CLIENT_ID", required=True)' in settings
     assert 'INSTALLED_APPS = ["mozilla_django_oidc"]' in settings
+    assert 'default="/bulletin/m/"' in settings
     assert settings.count("OIDC_RP_CLIENT_ID = env") == 1
     project = (package / "pyproject.toml").read_text(encoding="utf-8")
     assert '"mozilla-django-oidc>=4.0"' in project
@@ -138,6 +139,8 @@ def test_init_writes_oauth_client_env_for_an_installed_app(tmp_path, monkeypatch
         assert "OIDC_OP_TOKEN_ENDPOINT=" in env
         assert "OIDC_OP_USER_ENDPOINT=" in env
         assert "OIDC_RP_SIGN_ALGO=RS256" in env
+        assert "OIDC_LOGIN_REDIRECT_URL=/bulletin/m/" in env
+        assert "OIDC_LOGOUT_REDIRECT_URL=/bulletin/m/" in env
     finally:
         _forget_app("bulletin")
 
