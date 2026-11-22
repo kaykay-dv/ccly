@@ -171,6 +171,7 @@ def test_init_writes_env_without_a_fixed_site_name(tmp_path, monkeypatch, capsys
     assert "CCLY_RATELIMIT_RATE=60/m" in env
     assert "CCLY_RATELIMIT_KEY=user_or_ip" in env
     assert "CCLY_RATELIMIT_FAIL_OPEN=false" in env
+    assert "CCLY_ADMIN_IDLE_SECONDS=1800" in env
     token = re.search(r"CCLY_SESSION_COOKIE_NAME=ccly_([0-9a-f]{8})_session", env)
     assert token
     site = token.group(1)

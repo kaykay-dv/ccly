@@ -135,6 +135,9 @@ def test_site_uses_its_own_cookies_and_local_production_defaults(site):
     assert settings.SECURE_HSTS_SECONDS == 0
     assert settings.CSRF_TRUSTED_ORIGINS == []
     assert settings.DATABASES["default"]["CONN_MAX_AGE"] == 0
+    assert settings.CCLY_ADMIN_IDLE_SECONDS == 1800
+    assert settings.SESSION_COOKIE_AGE == 1800
+    assert settings.SESSION_SAVE_EVERY_REQUEST is True
 
     response = site["anonymous"].get(f"/{site['app_name']}/m/login/")
     assert settings.CSRF_COOKIE_NAME in response.cookies
@@ -171,6 +174,76 @@ def test_admin_navbar_shows_the_logo_beside_the_project_name(site):
     # The app name also appears in the admin URL, so check the visible label.
     assert f'class="ccly-logo">{site["app_name"]}' in brand
     assert 'src="/static/img/alaska.png"' in brand
+
+
+def _signed_in_client():
+    from django.contrib.auth import get_user_model
+    from django.test import Client
+
+    client = Client()
+    client.defaults["HTTP_HOST"] = "localhost"
+    client.force_login(get_user_model().objects.get(username="admin"))
+    return client
+
+
+def test_admin_idle_script_is_only_on_signed_in_pages(site):
+    from django.conf import settings
+
+    admin = f"/{site['app_name']}/m/"
+    signed_in = site["staff"].get(admin)
+    body = signed_in.content.decode()
+    assert signed_in.status_code == 200
+    assert 'id="ccly-admin-idle"' in body
+    assert 'data-idle-seconds="1800"' in body
+    assert f'data-idle-url="{admin}idle/"' in body
+    assert f'data-idle-key="ccly-admin-idle:{settings.SESSION_COOKIE_NAME}"' in body
+    assert "localStorage" in body
+    assert 'getElementById("logout-form")' in body
+
+    login = site["anonymous"].get(f"{admin}login/")
+    assert login.status_code == 200
+    assert 'id="ccly-admin-idle"' not in login.content.decode()
+
+
+def test_admin_idle_keepalive(site):
+    from django.conf import settings
+
+    idle = f"/{site['app_name']}/m/idle/"
+    anonymous = site["anonymous"].get(idle)
+    assert anonymous.status_code == 401
+
+    response = site["staff"].get(idle)
+    assert response.status_code == 204
+    assert response.content == b""
+    cookie = response.cookies[settings.SESSION_COOKIE_NAME]
+    assert int(cookie["max-age"]) == settings.SESSION_COOKIE_AGE
+
+
+def test_expired_admin_session_returns_to_login(site):
+    from datetime import timedelta
+
+    from django.contrib.sessions.models import Session
+    from django.utils import timezone
+
+    client = _signed_in_client()
+    stored = Session.objects.get(session_key=client.session.session_key)
+    stored.expire_date = timezone.now() - timedelta(seconds=1)
+    stored.save()
+    response = client.get(f"/{site['app_name']}/m/")
+    assert response.status_code == 302
+    assert "/login/" in response.url
+
+
+def test_admin_logout_ends_the_session(site):
+    client = _signed_in_client()
+    admin = f"/{site['app_name']}/m/"
+    response = client.post(f"{admin}logout/")
+    assert response.status_code == 200
+    assert "Logged out" in response.content.decode()
+    assert "_auth_user_id" not in client.session
+    follow = client.get(admin)
+    assert follow.status_code == 302
+    assert "/login/" in follow.url
 
 
 def test_admin_header_links_to_openapi(site):

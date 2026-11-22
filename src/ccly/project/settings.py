@@ -196,6 +196,15 @@ SESSION_COOKIE_PATH = _session_path
 SESSION_COOKIE_SECURE = _cookie_secure
 SESSION_COOKIE_SAMESITE = _session_samesite
 
+# Seconds without browser activity before the admin signs out. 0 keeps
+# Django's two-week session and does not install the idle script.
+CCLY_ADMIN_IDLE_SECONDS = _env_int("CCLY_ADMIN_IDLE_SECONDS", 1800)
+if CCLY_ADMIN_IDLE_SECONDS < 0:
+    raise ImproperlyConfigured("CCLY_ADMIN_IDLE_SECONDS must be 0 or greater.")
+if CCLY_ADMIN_IDLE_SECONDS:
+    SESSION_COOKIE_AGE = CCLY_ADMIN_IDLE_SECONDS
+    SESSION_SAVE_EVERY_REQUEST = True
+
 CSRF_COOKIE_NAME = _env_text("CCLY_CSRF_COOKIE_NAME", f"{_cache_prefix}_csrf")
 CSRF_COOKIE_DOMAIN = _cookie_domain
 CSRF_COOKIE_PATH = _env_text("CCLY_CSRF_COOKIE_PATH", "/")

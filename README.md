@@ -58,6 +58,8 @@ The admin login heading, the browser title, and the admin header use the install
 
 After you sign in, the upper-right corner of the admin has an OpenAPI link. The login form links to password reset, and the reset message is printed to the console unless you point `CCLY_EMAIL_BACKEND` at a real mailer. The account needs an email address.
 
+The admin signs out when the browser has been idle. The limit is `CCLY_ADMIN_IDLE_SECONDS`, and the default is 30 minutes. Set it to `0` to keep Django's two-week session instead.
+
 ### Django commands
 
 Any other command is passed to Django:
@@ -104,6 +106,9 @@ Set `CCLY_CONN_MAX_AGE` above `0` when the database is not SQLite.
 | `CCLY_SESSION_COOKIE_SAMESITE` | `Lax`, `Strict`, or `None` | `Lax` |
 | `CCLY_CSRF_COOKIE_SAMESITE` | `Lax`, `Strict`, or `None` | `Lax` |
 | `CCLY_COOKIE_SECURE` | Secure flag for the session, CSRF, and language cookies | `false` |
+| `CCLY_ADMIN_IDLE_SECONDS` | Sign out of the admin after this many seconds without browser activity. `0` leaves the two-week session | `1800` |
+
+Activity in a signed-in admin page slides that lifetime forward. The page posts the admin logout form when the browser has been idle for the whole limit, which ends the session. Closing the browser, or leaving it idle with JavaScript turned off, still ends the session when the time runs out. API calls that use this session cookie share the limit. Basic authentication does not.
 
 The default cache is per process. Point Django at a shared cache when you run more than one process. The cache prefix keeps two sites apart when they share that cache.
 

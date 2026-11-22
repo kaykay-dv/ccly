@@ -3,7 +3,10 @@ import importlib.util
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
+from django.http import HttpResponse
 from django.urls import include, path
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from ccly.extras import urlpatterns_for_apps
@@ -19,6 +22,18 @@ def _without_names(patterns: list) -> list:
     return patterns
 
 
+@never_cache
+@require_GET
+def admin_idle(request):
+    """Slide the session expiry while the admin tab is in use.
+
+    Anonymous requests are rejected so a dead session cannot be refreshed.
+    """
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+    return HttpResponse(status=204)
+
+
 def _admin_urlpatterns(app_names: list[str]) -> list:
     """Serve the admin at ``/<app_name>/m/`` for each installed app.
 
@@ -32,6 +47,11 @@ def _admin_urlpatterns(app_names: list[str]) -> list:
         named = index == 0
         patterns.extend(
             [
+                path(
+                    prefix + "idle/",
+                    admin_idle,
+                    name="admin_idle" if named else None,
+                ),
                 path(
                     prefix + "password_reset/",
                     auth_views.PasswordResetView.as_view(),

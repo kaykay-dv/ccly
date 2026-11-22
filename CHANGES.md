@@ -1,5 +1,9 @@
 # Changes
 
+## Admin session
+
+- The admin signs out after `CCLY_ADMIN_IDLE_SECONDS` without browser activity. The default is 1800 seconds. `0` leaves Django's two-week session.
+
 ## Continuous integration
 
 - GitHub Actions runs the test suite on Python 3.11, 3.12, and 3.13.

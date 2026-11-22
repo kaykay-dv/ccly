@@ -58,3 +58,89 @@
 </div>
 {% endif %}
 {% endblock %}
+
+{% block extrabody %}
+{{ block.super }}
+{% if CCLY_ADMIN_IDLE_SECONDS and user.is_authenticated and has_permission and CCLY_ADMIN_IDLE_URL %}
+<script id="ccly-admin-idle"
+        data-idle-seconds="{{ CCLY_ADMIN_IDLE_SECONDS }}"
+        data-idle-url="{{ CCLY_ADMIN_IDLE_URL }}"
+        data-idle-key="ccly-admin-idle:{{ CCLY_SESSION_COOKIE_NAME }}">
+(function () {
+  var script = document.getElementById("ccly-admin-idle");
+  var seconds = parseInt(script.getAttribute("data-idle-seconds"), 10);
+  var timeout = seconds * 1000;
+  var key = script.getAttribute("data-idle-key");
+  var keepaliveUrl = script.getAttribute("data-idle-url");
+  var keepaliveEvery = Math.min(60000, Math.max(1000, Math.floor(seconds / 2) * 1000));
+  var lastKeepalive = 0;
+  var lastWrite = 0;
+  var memory = Date.now();
+  var loggingOut = false;
+
+  function readActivity() {
+    try {
+      var stored = parseInt(localStorage.getItem(key) || "", 10);
+      if (stored > 0) {
+        return stored;
+      }
+    } catch (error) {}
+    return memory;
+  }
+
+  function writeActivity(at) {
+    memory = at;
+    try {
+      localStorage.setItem(key, String(at));
+    } catch (error) {}
+  }
+
+  function logout() {
+    if (loggingOut) {
+      return;
+    }
+    loggingOut = true;
+    var form = document.getElementById("logout-form");
+    if (form) {
+      form.submit();
+    }
+  }
+
+  function keepalive() {
+    var at = Date.now();
+    if (at - lastKeepalive < keepaliveEvery) {
+      return;
+    }
+    lastKeepalive = at;
+    fetch(keepaliveUrl, {
+      credentials: "same-origin",
+      headers: {"X-Requested-With": "ccly-idle"}
+    }).then(function (response) {
+      if (response.status === 401 || response.status === 403) {
+        logout();
+      }
+    }).catch(function () {});
+  }
+
+  function markActive() {
+    var at = Date.now();
+    if (at - lastWrite >= 1000) {
+      lastWrite = at;
+      writeActivity(at);
+    }
+    keepalive();
+  }
+
+  writeActivity(Date.now());
+  ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "wheel"].forEach(function (name) {
+    window.addEventListener(name, markActive, {passive: true});
+  });
+  window.setInterval(function () {
+    if (Date.now() - readActivity() >= timeout) {
+      logout();
+    }
+  }, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}
