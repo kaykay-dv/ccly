@@ -168,7 +168,8 @@ def test_admin_navbar_shows_the_logo_beside_the_project_name(site):
     assert response.status_code == 200
     start = body.index('id="site-name"')
     brand = body[start : body.index("</div>", start)]
-    assert brand.index('class="ccly-logo"') < brand.index(site["app_name"])
+    # The app name also appears in the admin URL, so check the visible label.
+    assert f'class="ccly-logo">{site["app_name"]}' in brand
     assert 'src="/static/img/alaska.png"' in brand
 
 

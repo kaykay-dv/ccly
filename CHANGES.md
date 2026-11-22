@@ -1,5 +1,9 @@
 # Changes
 
+## Continuous integration
+
+- GitHub Actions runs the test suite on Python 3.11, 3.12, and 3.13.
+
 ## Admin
 
 - The admin and its password reset are served at `/<app_name>/m/` instead of `/m/`.
