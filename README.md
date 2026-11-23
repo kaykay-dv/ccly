@@ -19,7 +19,7 @@ It is aimed at people building Django-based microservices. The stack is already 
 
 ## Quick start
 
-ccly is not on PyPI. Install it from GitHub with git. Python 3.11 or newer.
+ccly is not on PyPI. Install it from GitHub with git. Python 3.12 or newer.
 
 ```bash
 pip install git+https://github.com/kaykay-dv/ccly.git

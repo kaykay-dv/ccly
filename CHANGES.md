@@ -6,7 +6,7 @@
 
 ## Continuous integration
 
-- GitHub Actions runs the test suite on Python 3.11, 3.12, and 3.13.
+- GitHub Actions runs the test suite on Python 3.12 and 3.13.
 
 ## Admin
 
@@ -37,6 +37,7 @@
 
 ## Packaging
 
+- Require Python 3.12 or newer. Python 3.11 is no longer supported.
 - Marked ccly as alpha in `pyproject.toml` and added Django and Python classifiers.
 - Added Karl (https://github.com/kaykay-dv/) as the package author.
 

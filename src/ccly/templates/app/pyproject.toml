@@ -7,7 +7,7 @@ name = "__APP_NAME__"
 version = "0.1.0"
 description = "Django app __APP_NAME__."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "Django>=5.2",
     "djangorestframework>=3.16",
